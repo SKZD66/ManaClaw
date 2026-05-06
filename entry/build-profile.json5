@@ -5,6 +5,11 @@
       "abiFilters": ["arm64-v8a", "x86_64"],
       "path": "./src/main/cangjie/cjpm.toml"
     },
+    "externalNativeOptions": {
+      "path": "./src/main/cpp/CMakeLists.txt",
+      "abiFilters": ["arm64-v8a", "x86_64"],
+      "targets": ["ccssh"]
+    },
     "nativeLib": {
       "filter": {
         "enableOverride": true

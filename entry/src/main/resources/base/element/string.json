@@ -10,7 +10,11 @@
     },
     {
       "name": "EntryAbility_label",
-      "value": "label"
+      "value": "CC-Flow"
+    },
+    {
+      "name": "app_name",
+      "value": "CC-Flow"
     }
   ]
 }

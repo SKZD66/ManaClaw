@@ -12,6 +12,7 @@ class MainAbility <: Ability {
     }
 
     public override func onCreate(want: Want, launchParam: LaunchParam): Unit {
+        super.onCreate(want, launchParam)
         AppLog.info("MainAbility OnCreated.${want.abilityName}")
         match (launchParam.launchReason) {
             case LaunchReason.START_ABILITY => AppLog.info("START_ABILITY")
@@ -20,7 +21,8 @@ class MainAbility <: Ability {
     }
 
     public override func onWindowStageCreate(windowStage: WindowStage): Unit {
+        super.onWindowStageCreate(windowStage)
         AppLog.info("MainAbility onWindowStageCreate.")
-        windowStage.loadContent("EntryView")
+        windowStage.loadContent("MainPage")
     }
 }

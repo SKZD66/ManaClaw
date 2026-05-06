@@ -7,6 +7,7 @@ internal import ohos.window.WindowStage
 
 class MyAbilityStage <: AbilityStage {
     public override func onCreate(): Unit {
+        super.onCreate()
         AppLog.info("MyAbilityStage onCreated.")
     }
 }
