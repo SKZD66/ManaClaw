@@ -15,3 +15,9 @@
 **/ability_mainability_entry.cj
 **/module_**_entry.cj
 TODO.md
+Reference/
+.agents/
+.cache/
+.vscode/
+opencode.exe
+skills-lock.json
