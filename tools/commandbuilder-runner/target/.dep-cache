@@ -1,0 +1,16 @@
+{
+  "bin": {},
+  "pkg-build": {
+    "D:\\Documents\\MyApplication\\ManaClaw\\tools\\commandbuilder-runner\\src": {
+      "package": "ohos_app_cangjie_entry",
+      "isMacro": false,
+      "accessLevel": "public",
+      "timeStamp": 1778275850,
+      "dependencies": [],
+      "std-dependencies": [],
+      "testUsed": false,
+      "mockUsed": false
+    }
+  },
+  "pkg-test": {}
+}
