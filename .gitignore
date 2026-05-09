@@ -15,3 +15,12 @@
 **/ability_mainability_entry.cj
 **/module_**_entry.cj
 TODO.md
+Reference/
+.agents/
+.cache/
+.vscode/
+opencode.exe
+skills-lock.json
+entry/src/main/cpp/third_party/mbedtls/framework/scripts/mbedtls_framework/__pycache__
+entry/src/main/cpp/third_party/mbedtls/scripts/__pycache__
+tools/
