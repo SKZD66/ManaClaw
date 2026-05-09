@@ -21,6 +21,6 @@ Reference/
 .vscode/
 opencode.exe
 skills-lock.json
-/entry/src/main/cpp/third_party/mbedtls/framework/scripts/mbedtls_framework/__pycache__
-/entry/src/main/cpp/third_party/mbedtls/scripts/__pycache__
-/tools/commandbuilder-runner/target
+entry/src/main/cpp/third_party/mbedtls/framework/scripts/mbedtls_framework/__pycache__
+entry/src/main/cpp/third_party/mbedtls/scripts/__pycache__
+tools/
