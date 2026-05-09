@@ -8,6 +8,7 @@ internal import ohos.component.Button
 internal import ohos.component.Text
 internal import ohos.component.TextInput
 internal import ohos.component.TextArea
+internal import ohos.component.Scroll
 internal import ohos.component.CustomView
 internal import ohos.component.CJEntry
 internal import ohos.component.loadNativeView
@@ -303,12 +304,22 @@ fi
         } else {
             "<empty>"
         }
+        let displayOut = if (name == "TAIL_LOG") {
+            ClaudeLogFormatter.format(outBody)
+        } else {
+            outBody
+        }
+        let outTitle = if (name == "TAIL_LOG") {
+            "CLAUDE LOG"
+        } else {
+            "STDOUT"
+        }
         let errBody = if (res.stderr.size > 0) {
             res.stderr
         } else {
             "<empty>"
         }
-        commandOutput = "[${name}] exit=${res.code}\n\nSTDOUT:\n${outBody}\n\nSTDERR:\n${errBody}"
+        commandOutput = "[${name}] exit=${res.code}\n\n${outTitle}:\n${displayOut}\n\nSTDERR:\n${errBody}"
         result = "[${name}] exit=${res.code}"
     }
 
@@ -321,177 +332,293 @@ fi
         }
     }
 
+    private func modeName(): String {
+        if (selectedMode == "plan") {
+            return "PLAN"
+        }
+        return "RUN"
+    }
+
+    private func modeHint(): String {
+        if (selectedMode == "plan") {
+            return "规划模式，不直接执行危险写操作"
+        }
+        return "运行模式，会使用 danger run 参数"
+    }
+
+    private func toggleMode(): Unit {
+        if (selectedMode == "plan") {
+            selectedMode = "run"
+        } else {
+            selectedMode = "plan"
+        }
+    }
+
+    private func flowProgressText(): String {
+        return "流程 ${flowIndex}/${flowSteps().size}"
+    }
+
+    private func connectionSummary(): String {
+        return "${username}@${host}:${portText}"
+    }
+
     func build() {
         Row {
-            Column {
-                Text("CC-Flow SSH / CommandBuilder Test").fontSize(18).height(30)
-                Text(result).fontSize(14).height(24).width(100.percent)
-                Text(" ").height(4)
-                Row {
-                    Button("流程下一步").onClick {evt => runFlowNextStep()}.height(30).width(32.percent)
-                    Text(" ").width(2.percent)
-                    Button("重置流程").onClick {
-                        evt =>
-                            resetFlow()
-                            ()
-                    }.height(30).width(32.percent)
-                    Text(" ").width(2.percent)
-                    Button(if (outputOnly) {
-                        "返回表单"
-                    } else {
-                        "结果全屏"
-                    }).onClick {
-                        evt =>
-                            outputOnly = !outputOnly
-                            ()
-                    }.height(30).width(32.percent)
-                }.width(100.percent)
-                Text(" ").height(4)
-
-                if (outputOnly) {
-                    Text("结果输出(全屏)").fontSize(14).height(22)
-                    TextArea(text: commandOutput).height(520).width(100.percent)
-                } else {
-                    TextInput(placeholder: "Host / IP", text: host).onChange {
-                        value =>
-                            host = value
-                            ()
-                    }.height(36).width(100.percent)
-                    Text(" ").height(3)
-                    TextInput(placeholder: "Port", text: portText).onChange {
-                        value =>
-                            portText = value
-                            ()
-                    }.height(36).width(100.percent)
-                    Text(" ").height(3)
-                    TextInput(placeholder: "Username", text: username).onChange {
-                        value =>
-                            username = value
-                            ()
-                    }.height(36).width(100.percent)
-                    Text(" ").height(3)
-                    TextInput(placeholder: "Password", text: password).onChange {
-                        value =>
-                            password = value
-                            ()
-                    }.height(36).width(100.percent)
-                    Text(" ").height(3)
-                    Button("测试连接").onClick {evt => testConnection()}.height(34).width(100.percent)
-                    Text(" ").height(4)
-                    TextInput(placeholder: "Repo Path", text: repoPath).onChange {
-                        value =>
-                            repoPath = value
-                            ()
-                    }.height(36).width(100.percent)
-                    Text(" ").height(3)
-                    TextInput(placeholder: "Task ID", text: selectedTaskId).onChange {
-                        value =>
-                            selectedTaskId = value
-                            ()
-                    }.height(36).width(100.percent)
-                    Text(" ").height(3)
-                    TextInput(placeholder: "Mode(run/plan)", text: selectedMode)
-                        .onChange {
-                            value =>
-                                selectedMode = value
-                                ()
-                        }
-                        .height(36)
-                        .width(100.percent)
-                    Text(" ").height(3)
-                    TextArea(text: prompt).onChange {
-                        value =>
-                            prompt = value
-                            ()
-                    }.height(56).width(100.percent)
-
-                    Text(" ").height(4)
+            Scroll {
+                Column {
+                    Text("远程任务控制台").fontSize(22).fontColor(0x151A22).height(34).width(100.percent)
+                    Text(connectionSummary()).fontSize(13).fontColor(0x5F6B7A).height(20).width(100.percent)
+                    Text(result).fontSize(14).fontColor(0x1F6FEB).height(28).width(100.percent)
+                    Text(" ").height(6)
                     Row {
-                        Button("操作命令").onClick {
-                            evt => commandSection = "ops"
-                        }.height(30).width(49.percent)
+                        Button("下一步 · ${flowProgressText()}")
+                            .onClick {evt => runFlowNextStep()}
+                            .fontColor(0xFFFFFF)
+                            .backgroundColor(0x1F6FEB)
+                            .height(38)
+                            .width(49.percent)
                         Text(" ").width(2.percent)
-                        Button("验证命令").onClick {
-                            evt => commandSection = "verify"
-                        }.height(30).width(49.percent)
+                        Button(if (outputOnly) {
+                            "返回表单"
+                        } else {
+                            "输出全屏"
+                        })
+                            .onClick {
+                                evt =>
+                                outputOnly = !outputOnly
+                                ()
+                            }
+                            .fontColor(0x151A22)
+                            .backgroundColor(0xE8EDF3)
+                            .height(38)
+                            .width(49.percent)
                     }.width(100.percent)
                     Text(" ").height(4)
+                    Row {
+                        Button("重置流程")
+                            .onClick {
+                                evt =>
+                                resetFlow()
+                                ()
+                            }
+                            .fontColor(0x151A22)
+                            .backgroundColor(0xE8EDF3)
+                            .height(34)
+                            .width(32.percent)
+                        Text(" ").width(2.percent)
+                        Button("模式: ${modeName()}")
+                            .onClick {
+                                evt =>
+                                toggleMode()
+                                ()
+                            }
+                            .fontColor(0xFFFFFF)
+                            .backgroundColor(0x2B8A3E)
+                            .height(34)
+                            .width(32.percent)
+                        Text(" ").width(2.percent)
+                        Button("测试连接")
+                            .onClick {evt => testConnection()}
+                            .fontColor(0xFFFFFF)
+                            .backgroundColor(0x3B5BDB)
+                            .height(34)
+                            .width(32.percent)
+                    }.width(100.percent)
+                    Text(modeHint()).fontSize(12).fontColor(0x6B7280).height(22).width(100.percent)
+                    Text(" ").height(6)
 
-                    if (commandSection == "ops") {
-                        Row {
-                            Button("INIT").onClick {evt => runByName("INIT")}.height(30).width(49.percent)
-                            Text(" ").width(2.percent)
-                            Button("CREATE").onClick {evt => runByName("CREATE")}.height(30).width(49.percent)
-                        }.width(100.percent)
-                        Text(" ").height(3)
-                        Row {
-                            Button("START").onClick {evt => runByName("START")}.height(30).width(49.percent)
-                            Text(" ").width(2.percent)
-                            Button("LIST").onClick {evt => runByName("LIST")}.height(30).width(49.percent)
-                        }.width(100.percent)
-                        Text(" ").height(3)
-                        Row {
-                            Button("STATUS").onClick {evt => runByName("STATUS")}.height(30).width(49.percent)
-                            Text(" ").width(2.percent)
-                            Button("TAIL_LOG").onClick {evt => runByName("TAIL_LOG")}.height(30).width(49.percent)
-                        }.width(100.percent)
-                        Text(" ").height(3)
-                        Row {
-                            Button("TAIL_STDERR")
-                                .onClick {evt => runByName("TAIL_STDERR")}
-                                .height(30)
-                                .width(49.percent)
-                            Text(" ").width(2.percent)
-                            Button("GIT_SUMMARY")
-                                .onClick {evt => runByName("GIT_SUMMARY")}
-                                .height(30)
-                                .width(49.percent)
-                        }.width(100.percent)
-                        Text(" ").height(3)
-                        Row {
-                            Button("STOP").onClick {evt => runByName("STOP")}.height(30).width(49.percent)
-                            Text(" ").width(2.percent)
-                            Button("SOFT_DELETE")
-                                .onClick {evt => runByName("SOFT_DELETE")}
-                                .height(30)
-                                .width(49.percent)
-                        }.width(100.percent)
-                        Text(" ").height(3)
-                        Button("CLEAN_TEST_DATA")
-                            .onClick {evt => runByName("CLEAN_TEST_DATA")}
-                            .height(30)
-                            .width(100.percent)
+                    if (outputOnly) {
+                        Text("命令输出").fontSize(16).fontColor(0x151A22).height(26).width(100.percent)
+                        TextArea(text: commandOutput).fontSize(12).fontColor(0x1F2933).height(560).width(100.percent)
                     } else {
+                        Text("连接").fontSize(16).fontColor(0x151A22).height(26).width(100.percent)
                         Row {
-                            Button("VERIFY_CREATE")
-                                .onClick {evt => runByName("VERIFY_CREATE")}
-                                .height(30)
+                            TextInput(placeholder: "Host / IP", text: host)
+                                .onChange {
+                                    value =>
+                                    host = value
+                                    ()
+                                }
+                                .height(38)
+                                .width(66.percent)
+                            Text(" ").width(2.percent)
+                            TextInput(placeholder: "Port", text: portText)
+                                .onChange {
+                                    value =>
+                                    portText = value
+                                    ()
+                                }
+                                .height(38)
+                                .width(32.percent)
+                        }.width(100.percent)
+                        Text(" ").height(4)
+                        Row {
+                            TextInput(placeholder: "Username", text: username)
+                                .onChange {
+                                    value =>
+                                    username = value
+                                    ()
+                                }
+                                .height(38)
                                 .width(49.percent)
                             Text(" ").width(2.percent)
-                            Button("VERIFY_START")
-                                .onClick {evt => runByName("VERIFY_START")}
-                                .height(30)
+                            TextInput(placeholder: "Password", text: password)
+                                .onChange {
+                                    value =>
+                                    password = value
+                                    ()
+                                }
+                                .height(38)
                                 .width(49.percent)
                         }.width(100.percent)
-                        Text(" ").height(3)
-                        Row {
-                            Button("VERIFY_STOP")
-                                .onClick {evt => runByName("VERIFY_STOP")}
-                                .height(30)
-                                .width(49.percent)
-                            Text(" ").width(2.percent)
-                            Button("VERIFY_DELETE")
-                                .onClick {evt => runByName("VERIFY_DELETE")}
-                                .height(30)
-                                .width(49.percent)
-                        }.width(100.percent)
-                    }
+                        Text(" ").height(8)
 
-                    Text(" ").height(4)
-                    Text("结果输出").fontSize(14).height(22)
-                    TextArea(text: commandOutput).height(120).width(100.percent)
-                }
-            }.width(100.percent).height(100.percent)
+                        Text("任务").fontSize(16).fontColor(0x151A22).height(26).width(100.percent)
+                        TextInput(placeholder: "Repo Path", text: repoPath)
+                            .onChange {
+                                value =>
+                                repoPath = value
+                                ()
+                            }
+                            .height(38)
+                            .width(100.percent)
+                        Text(" ").height(4)
+                        Row {
+                            TextInput(placeholder: "Task ID", text: selectedTaskId)
+                                .onChange {
+                                    value =>
+                                    selectedTaskId = value
+                                    ()
+                                }
+                                .height(38)
+                                .width(66.percent)
+                            Text(" ").width(2.percent)
+                            Button("切换 ${modeName()}")
+                                .onClick {
+                                    evt =>
+                                    toggleMode()
+                                    ()
+                                }
+                                .fontColor(0xFFFFFF)
+                                .backgroundColor(0x2B8A3E)
+                                .height(38)
+                                .width(32.percent)
+                        }.width(100.percent)
+                        Text(" ").height(4)
+                        TextArea(text: prompt).onChange {
+                            value =>
+                            prompt = value
+                            ()
+                        }.height(76).width(100.percent)
+
+                        Text(" ").height(8)
+                        Text("快捷操作").fontSize(16).fontColor(0x151A22).height(26).width(100.percent)
+                        Row {
+                            Button("INIT")
+                                .onClick {evt => runByName("INIT")}
+                                .fontColor(0xFFFFFF)
+                                .backgroundColor(0x1F6FEB)
+                                .height(34)
+                                .width(32.percent)
+                            Text(" ").width(2.percent)
+                            Button("CREATE")
+                                .onClick {evt => runByName("CREATE")}
+                                .fontColor(0xFFFFFF)
+                                .backgroundColor(0x1F6FEB)
+                                .height(34)
+                                .width(32.percent)
+                            Text(" ").width(2.percent)
+                            Button("START")
+                                .onClick {evt => runByName("START")}
+                                .fontColor(0xFFFFFF)
+                                .backgroundColor(0x1F6FEB)
+                                .height(34)
+                                .width(32.percent)
+                        }.width(100.percent)
+                        Text(" ").height(4)
+                        Row {
+                            Button("STATUS").onClick {evt => runByName("STATUS")}.height(34).width(32.percent)
+                            Text(" ").width(2.percent)
+                            Button("LIST").onClick {evt => runByName("LIST")}.height(34).width(32.percent)
+                            Text(" ").width(2.percent)
+                            Button("GIT").onClick {evt => runByName("GIT_SUMMARY")}.height(34).width(32.percent)
+                        }.width(100.percent)
+
+                        Text(" ").height(8)
+                        Row {
+                            Button(if (commandSection == "ops") {
+                                "常用命令"
+                            } else {
+                                "切到常用"
+                            }).onClick {
+                                evt => commandSection = "ops"
+                            }.height(34).width(49.percent)
+                            Text(" ").width(2.percent)
+                            Button(if (commandSection == "verify") {
+                                "验证命令"
+                            } else {
+                                "切到验证"
+                            }).onClick {
+                                evt => commandSection = "verify"
+                            }.height(34).width(49.percent)
+                        }.width(100.percent)
+                        Text(" ").height(4)
+
+                        if (commandSection == "ops") {
+                            Row {
+                                Button("TAIL_LOG").onClick {evt => runByName("TAIL_LOG")}.height(32).width(49.percent)
+                                Text(" ").width(2.percent)
+                                Button("TAIL_ERR")
+                                    .onClick {evt => runByName("TAIL_STDERR")}
+                                    .height(32)
+                                    .width(49.percent)
+                            }.width(100.percent)
+                            Text(" ").height(4)
+                            Row {
+                                Button("STOP").onClick {evt => runByName("STOP")}.height(32).width(49.percent)
+                                Text(" ").width(2.percent)
+                                Button("SOFT_DELETE")
+                                    .onClick {evt => runByName("SOFT_DELETE")}
+                                    .height(32)
+                                    .width(49.percent)
+                            }.width(100.percent)
+                            Text(" ").height(4)
+                            Button("CLEAN_TEST_DATA")
+                                .onClick {evt => runByName("CLEAN_TEST_DATA")}
+                                .height(32)
+                                .width(100.percent)
+                        } else {
+                            Row {
+                                Button("VERIFY_CREATE")
+                                    .onClick {evt => runByName("VERIFY_CREATE")}
+                                    .height(32)
+                                    .width(49.percent)
+                                Text(" ").width(2.percent)
+                                Button("VERIFY_START")
+                                    .onClick {evt => runByName("VERIFY_START")}
+                                    .height(32)
+                                    .width(49.percent)
+                            }.width(100.percent)
+                            Text(" ").height(4)
+                            Row {
+                                Button("VERIFY_STOP")
+                                    .onClick {evt => runByName("VERIFY_STOP")}
+                                    .height(32)
+                                    .width(49.percent)
+                                Text(" ").width(2.percent)
+                                Button("VERIFY_DELETE")
+                                    .onClick {evt => runByName("VERIFY_DELETE")}
+                                    .height(32)
+                                    .width(49.percent)
+                            }.width(100.percent)
+                        }
+
+                        Text(" ").height(8)
+                        Text("命令输出").fontSize(16).fontColor(0x151A22).height(26).width(100.percent)
+                        TextArea(text: commandOutput).fontSize(12).fontColor(0x1F2933).height(190).width(100.percent)
+                    }
+                }.width(100.percent)
+            }.width(100.percent).height(100.percent).backgroundColor(0xF6F8FB)
         }.height(100.percent)
     }
 }
