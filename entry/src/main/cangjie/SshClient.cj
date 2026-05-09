@@ -3,10 +3,15 @@ package ohos_app_cangjie_entry
 internal import ohos.base.CStringExtend
 
 foreign func cc_ssh_connect(host: CString, port: Int32, user: CString, password: CString, timeoutMs: Int32): Int32
+
 foreign func cc_ssh_exec(command: CString, timeoutMs: Int32): Int32
+
 foreign func cc_ssh_disconnect(): Int32
+
 foreign func cc_ssh_stdout(): CString
+
 foreign func cc_ssh_stderr(): CString
+
 foreign func cc_ssh_last_error(): CString
 
 class ExecResult {
@@ -22,12 +27,12 @@ class ExecResult {
 }
 
 class SshClient {
-    public func execEchoOk(host: String, port: Int32, user: String, password: String): ExecResult {
+    public func execCommand(host: String, port: Int32, user: String, password: String, command: String, timeoutMs: Int32): ExecResult {
         unsafe {
             let cHost = LibC.mallocCString(host)
             let cUser = LibC.mallocCString(user)
             let cPassword = LibC.mallocCString(password)
-            let cCommand = LibC.mallocCString("echo ok")
+            let cCommand = LibC.mallocCString(command)
 
             let connected = cc_ssh_connect(cHost, port, cUser, cPassword, 3000)
             cHost.free()
@@ -41,7 +46,7 @@ class SshClient {
                 return ExecResult(connected, "", err)
             }
 
-            let code = cc_ssh_exec(cCommand, 3000)
+            let code = cc_ssh_exec(cCommand, timeoutMs)
             cCommand.free()
             let out = cc_ssh_stdout().toString()
             let err = cc_ssh_stderr().toString()
@@ -52,5 +57,9 @@ class SshClient {
             }
             return ExecResult(code, out, err)
         }
+    }
+
+    public func execEchoOk(host: String, port: Int32, user: String, password: String): ExecResult {
+        return execCommand(host, port, user, password, "echo ok", 3000)
     }
 }

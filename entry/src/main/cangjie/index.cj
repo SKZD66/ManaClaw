@@ -2,10 +2,12 @@ package ohos_app_cangjie_entry
 
 internal import ohos.base.LengthProp
 internal import ohos.component.Column
+internal import ohos.component.If
 internal import ohos.component.Row
 internal import ohos.component.Button
 internal import ohos.component.Text
 internal import ohos.component.TextInput
+internal import ohos.component.TextArea
 internal import ohos.component.CustomView
 internal import ohos.component.CJEntry
 internal import ohos.component.loadNativeView
@@ -18,19 +20,45 @@ import ohos.state_macro_manage.State
 import ohos.state_macro_manage.r
 import std.convert.*
 
+class CommandCase {
+    let name: String
+    let command: String
+
+    public init(name: String, command: String) {
+        this.name = name
+        this.command = command
+    }
+}
+
 @Entry
 @Component
 class EntryView {
     @State
-    var host: String = ""
+    var host: String = "182.92.107.89"
     @State
-    var portText: String = "22"
+    var portText: String = "11761"
     @State
-    var username: String = ""
+    var username: String = "root"
     @State
     var password: String = ""
     @State
     var result: String = "输入服务器信息后点击测试连接"
+    @State
+    var commandOutput: String = ""
+    @State
+    var selectedTaskId: String = "ccm-qa-000001"
+    @State
+    var repoPath: String = "/root/projects/ccflow-test-repo"
+    @State
+    var prompt: String = "请输出当前仓库状态并结束。"
+    @State
+    var selectedMode: String = "run"
+    @State
+    var commandSection: String = "ops"
+    @State
+    var flowIndex: Int64 = 0
+    @State
+    var outputOnly: Bool = false
 
     func testConnection(): Unit {
         if (host.size == 0 || portText.size == 0 || username.size == 0) {
@@ -59,35 +87,410 @@ class EntryView {
         }
     }
 
+    private func parsePortOrZero(): Int32 {
+        match (Int32.tryParse(portText)) {
+            case Some(v) => v
+            case None => 0
+        }
+    }
+
+    private func checkReadyForCommand(): Bool {
+        if (host.size == 0 || username.size == 0 || password.size == 0) {
+            commandOutput = "请先填写 Host/Username/Password"
+            return false
+        }
+        let port = parsePortOrZero()
+        if (port < 1 || port > 65535) {
+            commandOutput = "Port 必须是 1-65535"
+            return false
+        }
+        if (repoPath.size == 0) {
+            commandOutput = "Repo Path 不能为空"
+            return false
+        }
+        if (selectedTaskId.size == 0) {
+            commandOutput = "Task ID 不能为空"
+            return false
+        }
+        return true
+    }
+
+    private func flowSteps(): Array<String> {
+        return [
+            "CLEAN_TEST_DATA",
+            "INIT",
+            "CREATE",
+            "VERIFY_CREATE",
+            "START",
+            "VERIFY_START",
+            "STATUS",
+            "TAIL_LOG",
+            "TAIL_STDERR",
+            "GIT_SUMMARY",
+            "STOP",
+            "VERIFY_STOP",
+            "SOFT_DELETE",
+            "VERIFY_DELETE"
+        ]
+    }
+
+    private func runFlowNextStep(): Unit {
+        let steps = flowSteps()
+        if (flowIndex >= steps.size) {
+            result = "流程已完成，请点击重置流程后再开始"
+            return
+        }
+        let stepName = steps[flowIndex]
+        flowIndex += 1
+        result = "流程步骤 ${flowIndex}/${steps.size}: ${stepName}"
+        runByName(stepName)
+    }
+
+    private func resetFlow(): Unit {
+        flowIndex = 0
+        result = "流程已重置"
+    }
+
+    private func makeInput(): TaskCommandInput {
+        let mode = if (selectedMode == "plan") {
+            RunMode.plan
+        } else {
+            RunMode.run
+        }
+        let promptB64 = ShellEscape.base64Encode(prompt)
+        return TaskCommandInput(selectedTaskId, repoPath, "", "", "", promptB64, mode)
+    }
+
+    private func buildCases(): Array<CommandCase> {
+        let builder = CommandBuilder()
+        let input = makeInput()
+        let taskIdQ = ShellEscape.shellSingleQuote(selectedTaskId)
+        let repoQ = ShellEscape.shellSingleQuote(repoPath)
+
+        let cleanCmd = """
+set -e
+TASK_ID=${taskIdQ}
+REPO=${repoQ}
+ROOT="$HOME/.cc-mobile"
+tmux has-session -t "cc-$TASK_ID" 2>/dev/null && tmux kill-session -t "cc-$TASK_ID" || true
+rm -rf "$ROOT/tasks/$TASK_ID"
+rm -rf "$ROOT/worktrees/$TASK_ID"
+cd "$REPO"
+git worktree prune || true
+git branch -D "agent/$TASK_ID" 2>/dev/null || true
+echo "clean_done"
+"""
+
+        let verifyCreateCmd = """
+set -e
+TASK_ID=${taskIdQ}
+REPO=${repoQ}
+TASK_DIR="$HOME/.cc-mobile/tasks/$TASK_ID"
+WT_DIR="$HOME/.cc-mobile/worktrees/$TASK_ID"
+ERR=0
+[ -f "$TASK_DIR/prompt.txt" ] || { echo "missing:prompt.txt"; ERR=1; }
+[ -f "$TASK_DIR/meta.env" ] || { echo "missing:meta.env"; ERR=1; }
+[ -f "$TASK_DIR/status" ] || { echo "missing:status"; ERR=1; }
+[ -d "$WT_DIR" ] || { echo "missing:worktree"; ERR=1; }
+cd "$REPO"
+BRANCH=$(git branch --list "agent/$TASK_ID")
+if [ -z "$BRANCH" ]; then
+  echo "missing:branch"
+  ERR=1
+fi
+if [ "$ERR" -eq 0 ]; then
+  echo "VERIFY_CREATE:PASS"
+else
+  echo "VERIFY_CREATE:FAIL"
+  exit 1
+fi
+"""
+
+        let verifyStartCmd = """
+set -e
+TASK_ID=${taskIdQ}
+TASK_DIR="$HOME/.cc-mobile/tasks/$TASK_ID"
+ERR=0
+STATUS=$(cat "$TASK_DIR/status" 2>/dev/null || echo unknown)
+if [ "$STATUS" != "running" ] && [ "$STATUS" != "completed" ] && [ "$STATUS" != "failed" ]; then
+  echo "bad_status:$STATUS"
+  ERR=1
+fi
+[ -f "$TASK_DIR/events.jsonl" ] || { echo "missing:events.jsonl"; ERR=1; }
+[ -f "$TASK_DIR/stderr.log" ] || { echo "missing:stderr.log"; ERR=1; }
+if [ "$STATUS" = "completed" ] || [ "$STATUS" = "failed" ]; then
+  [ -f "$TASK_DIR/exit.code" ] || { echo "missing:exit.code"; ERR=1; }
+fi
+if [ "$ERR" -eq 0 ]; then
+  echo "VERIFY_START:PASS"
+else
+  echo "VERIFY_START:FAIL"
+  exit 1
+fi
+"""
+
+        let verifyStopCmd = """
+set -e
+TASK_ID=${taskIdQ}
+TASK_DIR="$HOME/.cc-mobile/tasks/$TASK_ID"
+ERR=0
+tmux has-session -t "cc-$TASK_ID" 2>/dev/null && { echo "session_still_alive"; ERR=1; } || true
+STATUS=$(cat "$TASK_DIR/status" 2>/dev/null || echo unknown)
+if [ "$STATUS" != "stopped" ]; then
+  echo "bad_status:$STATUS"
+  ERR=1
+fi
+if [ "$ERR" -eq 0 ]; then
+  echo "VERIFY_STOP:PASS"
+else
+  echo "VERIFY_STOP:FAIL"
+  exit 1
+fi
+"""
+
+        let verifyDeleteCmd = """
+set -e
+TASK_ID=${taskIdQ}
+TASK_DIR="$HOME/.cc-mobile/tasks/$TASK_ID"
+WT_DIR="$HOME/.cc-mobile/worktrees/$TASK_ID"
+ERR=0
+STATUS=$(cat "$TASK_DIR/status" 2>/dev/null || echo unknown)
+if [ "$STATUS" != "deleted" ]; then
+  echo "bad_status:$STATUS"
+  ERR=1
+fi
+[ -d "$TASK_DIR" ] || { echo "missing:task_dir"; ERR=1; }
+[ -d "$WT_DIR" ] || { echo "missing:worktree_dir"; ERR=1; }
+if [ "$ERR" -eq 0 ]; then
+  echo "VERIFY_DELETE:PASS"
+else
+  echo "VERIFY_DELETE:FAIL"
+  exit 1
+fi
+"""
+
+        return [
+            CommandCase("INIT", builder.buildInitCommand()),
+            CommandCase("CREATE", builder.buildCreateTaskCommand(input)),
+            CommandCase("START", builder.buildStartTaskCommand(input)),
+            CommandCase("LIST", builder.buildListTasksCommand()),
+            CommandCase("STATUS", builder.buildTaskStatusCommand(selectedTaskId)),
+            CommandCase("TAIL_LOG", builder.buildTailLogCommand(selectedTaskId, 200)),
+            CommandCase("TAIL_STDERR", builder.buildTailStderrCommand(selectedTaskId)),
+            CommandCase("GIT_SUMMARY", builder.buildGitSummaryCommand(selectedTaskId)),
+            CommandCase("STOP", builder.buildStopTaskCommand(selectedTaskId)),
+            CommandCase("SOFT_DELETE", builder.buildSoftDeleteCommand(selectedTaskId)),
+            CommandCase("CLEAN_TEST_DATA", cleanCmd),
+            CommandCase("VERIFY_CREATE", verifyCreateCmd),
+            CommandCase("VERIFY_START", verifyStartCmd),
+            CommandCase("VERIFY_STOP", verifyStopCmd),
+            CommandCase("VERIFY_DELETE", verifyDeleteCmd)
+        ]
+    }
+
+    private func runRemoteCommand(name: String, command: String): Unit {
+        if (!checkReadyForCommand()) {
+            return
+        }
+
+        commandOutput = "[${name}] 执行中..."
+        result = "[${name}] 执行中..."
+        let port = parsePortOrZero()
+        let ssh = SshClient()
+        let res = ssh.execCommand(host, port, username, password, command, 120000)
+        let outBody = if (res.stdout.size > 0) {
+            res.stdout
+        } else {
+            "<empty>"
+        }
+        let errBody = if (res.stderr.size > 0) {
+            res.stderr
+        } else {
+            "<empty>"
+        }
+        commandOutput = "[${name}] exit=${res.code}\n\nSTDOUT:\n${outBody}\n\nSTDERR:\n${errBody}"
+        result = "[${name}] exit=${res.code}"
+    }
+
+    private func runByName(targetName: String): Unit {
+        for (c in buildCases()) {
+            if (c.name == targetName) {
+                runRemoteCommand(c.name, c.command)
+                return
+            }
+        }
+    }
+
     func build() {
         Row {
             Column {
-                Text("CC-Flow SSH")
-                    .fontSize(28)
-                    .height(56)
-                TextInput(placeholder: "Host / IP", text: host)
-                    .onChange { value => host = value; () }
-                    .height(56)
-                    .width(100.percent)
-                TextInput(placeholder: "Port", text: portText)
-                    .onChange { value => portText = value; () }
-                    .height(56)
-                    .width(100.percent)
-                TextInput(placeholder: "Username", text: username)
-                    .onChange { value => username = value; () }
-                    .height(56)
-                    .width(100.percent)
-                TextInput(placeholder: "Password", text: password)
-                    .onChange { value => password = value; () }
-                    .height(56)
-                    .width(100.percent)
-                Button("测试连接")
-                    .onClick { evt => testConnection() }
-                    .height(56)
-                    .width(100.percent)
-                Text(result)
-                    .fontSize(16)
-                    .width(100.percent)
+                Text("CC-Flow SSH / CommandBuilder Test").fontSize(18).height(30)
+                Text(result).fontSize(14).height(24).width(100.percent)
+                Text(" ").height(4)
+                Row {
+                    Button("流程下一步").onClick {evt => runFlowNextStep()}.height(30).width(32.percent)
+                    Text(" ").width(2.percent)
+                    Button("重置流程").onClick {
+                        evt =>
+                            resetFlow()
+                            ()
+                    }.height(30).width(32.percent)
+                    Text(" ").width(2.percent)
+                    Button(if (outputOnly) {
+                        "返回表单"
+                    } else {
+                        "结果全屏"
+                    }).onClick {
+                        evt =>
+                            outputOnly = !outputOnly
+                            ()
+                    }.height(30).width(32.percent)
+                }.width(100.percent)
+                Text(" ").height(4)
+
+                if (outputOnly) {
+                    Text("结果输出(全屏)").fontSize(14).height(22)
+                    TextArea(text: commandOutput).height(520).width(100.percent)
+                } else {
+                    TextInput(placeholder: "Host / IP", text: host).onChange {
+                        value =>
+                            host = value
+                            ()
+                    }.height(36).width(100.percent)
+                    Text(" ").height(3)
+                    TextInput(placeholder: "Port", text: portText).onChange {
+                        value =>
+                            portText = value
+                            ()
+                    }.height(36).width(100.percent)
+                    Text(" ").height(3)
+                    TextInput(placeholder: "Username", text: username).onChange {
+                        value =>
+                            username = value
+                            ()
+                    }.height(36).width(100.percent)
+                    Text(" ").height(3)
+                    TextInput(placeholder: "Password", text: password).onChange {
+                        value =>
+                            password = value
+                            ()
+                    }.height(36).width(100.percent)
+                    Text(" ").height(3)
+                    Button("测试连接").onClick {evt => testConnection()}.height(34).width(100.percent)
+                    Text(" ").height(4)
+                    TextInput(placeholder: "Repo Path", text: repoPath).onChange {
+                        value =>
+                            repoPath = value
+                            ()
+                    }.height(36).width(100.percent)
+                    Text(" ").height(3)
+                    TextInput(placeholder: "Task ID", text: selectedTaskId).onChange {
+                        value =>
+                            selectedTaskId = value
+                            ()
+                    }.height(36).width(100.percent)
+                    Text(" ").height(3)
+                    TextInput(placeholder: "Mode(run/plan)", text: selectedMode)
+                        .onChange {
+                            value =>
+                                selectedMode = value
+                                ()
+                        }
+                        .height(36)
+                        .width(100.percent)
+                    Text(" ").height(3)
+                    TextArea(text: prompt).onChange {
+                        value =>
+                            prompt = value
+                            ()
+                    }.height(56).width(100.percent)
+
+                    Text(" ").height(4)
+                    Row {
+                        Button("操作命令").onClick {
+                            evt => commandSection = "ops"
+                        }.height(30).width(49.percent)
+                        Text(" ").width(2.percent)
+                        Button("验证命令").onClick {
+                            evt => commandSection = "verify"
+                        }.height(30).width(49.percent)
+                    }.width(100.percent)
+                    Text(" ").height(4)
+
+                    if (commandSection == "ops") {
+                        Row {
+                            Button("INIT").onClick {evt => runByName("INIT")}.height(30).width(49.percent)
+                            Text(" ").width(2.percent)
+                            Button("CREATE").onClick {evt => runByName("CREATE")}.height(30).width(49.percent)
+                        }.width(100.percent)
+                        Text(" ").height(3)
+                        Row {
+                            Button("START").onClick {evt => runByName("START")}.height(30).width(49.percent)
+                            Text(" ").width(2.percent)
+                            Button("LIST").onClick {evt => runByName("LIST")}.height(30).width(49.percent)
+                        }.width(100.percent)
+                        Text(" ").height(3)
+                        Row {
+                            Button("STATUS").onClick {evt => runByName("STATUS")}.height(30).width(49.percent)
+                            Text(" ").width(2.percent)
+                            Button("TAIL_LOG").onClick {evt => runByName("TAIL_LOG")}.height(30).width(49.percent)
+                        }.width(100.percent)
+                        Text(" ").height(3)
+                        Row {
+                            Button("TAIL_STDERR")
+                                .onClick {evt => runByName("TAIL_STDERR")}
+                                .height(30)
+                                .width(49.percent)
+                            Text(" ").width(2.percent)
+                            Button("GIT_SUMMARY")
+                                .onClick {evt => runByName("GIT_SUMMARY")}
+                                .height(30)
+                                .width(49.percent)
+                        }.width(100.percent)
+                        Text(" ").height(3)
+                        Row {
+                            Button("STOP").onClick {evt => runByName("STOP")}.height(30).width(49.percent)
+                            Text(" ").width(2.percent)
+                            Button("SOFT_DELETE")
+                                .onClick {evt => runByName("SOFT_DELETE")}
+                                .height(30)
+                                .width(49.percent)
+                        }.width(100.percent)
+                        Text(" ").height(3)
+                        Button("CLEAN_TEST_DATA")
+                            .onClick {evt => runByName("CLEAN_TEST_DATA")}
+                            .height(30)
+                            .width(100.percent)
+                    } else {
+                        Row {
+                            Button("VERIFY_CREATE")
+                                .onClick {evt => runByName("VERIFY_CREATE")}
+                                .height(30)
+                                .width(49.percent)
+                            Text(" ").width(2.percent)
+                            Button("VERIFY_START")
+                                .onClick {evt => runByName("VERIFY_START")}
+                                .height(30)
+                                .width(49.percent)
+                        }.width(100.percent)
+                        Text(" ").height(3)
+                        Row {
+                            Button("VERIFY_STOP")
+                                .onClick {evt => runByName("VERIFY_STOP")}
+                                .height(30)
+                                .width(49.percent)
+                            Text(" ").width(2.percent)
+                            Button("VERIFY_DELETE")
+                                .onClick {evt => runByName("VERIFY_DELETE")}
+                                .height(30)
+                                .width(49.percent)
+                        }.width(100.percent)
+                    }
+
+                    Text(" ").height(4)
+                    Text("结果输出").fontSize(14).height(22)
+                    TextArea(text: commandOutput).height(120).width(100.percent)
+                }
             }.width(100.percent).height(100.percent)
         }.height(100.percent)
     }

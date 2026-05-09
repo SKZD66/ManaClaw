@@ -11,7 +11,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 RUNNER_DIR = ROOT / "tools" / "commandbuilder-runner"
 RUNNER_SRC = RUNNER_DIR / "src"
 SOURCE_COMMAND_BUILDER = ROOT / "entry" / "src" / "main" / "cangjie" / "CommandBuilder.cj"
-TARGET_COMMAND_BUILDER = RUNNER_SRC / "CommandBuilder.cj"
+TARGET_COMMAND_BUILDER = RUNNER_SRC / "CommandBuilderStandalone.cj"
 
 
 def run_cmd(cmd: list[str], cwd: pathlib.Path) -> int:
