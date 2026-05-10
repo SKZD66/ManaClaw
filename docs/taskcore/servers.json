@@ -1,0 +1,13 @@
+[
+  {
+    "id": "default",
+    "name": "Development Server",
+    "host": "127.0.0.1",
+    "port": 22,
+    "username": "dev",
+    "passwordRef": "local-password",
+    "defaultRepoPath": "/home/dev/project",
+    "createdAt": 1778112000,
+    "updatedAt": 1778112000
+  }
+]
