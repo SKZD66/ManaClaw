@@ -9,7 +9,7 @@
     ],
     "deliveryWithInstall": true,
     "installationFree": false,
-    "srcEntry": "ohos_app_cangjie_entry.MyAbilityStage",
+    "pages": "$profile:main_pages",
     "requestPermissions": [
       {
         "name": "ohos.permission.INTERNET"
@@ -18,7 +18,7 @@
     "abilities": [
       {
         "name": "EntryAbility",
-        "srcEntry": "ohos_app_cangjie_entry.MainAbility",
+        "srcEntry": "./ets/entryability/EntryAbility.ets",
         "description": "$string:EntryAbility_desc",
         "icon": "$media:layered_image",
         "label": "$string:EntryAbility_label",

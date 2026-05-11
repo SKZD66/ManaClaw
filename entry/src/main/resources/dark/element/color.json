@@ -1,0 +1,981 @@
+{
+  "color" : [ {
+    "name" : "start_window_background",
+    "value" : "#FF1D1D1D"
+  }, {
+    "name" : "app_icon_color",
+    "value" : "#B0B0B0"
+  }, {
+    "name" : "app_icon_pressed_color",
+    "value" : "#909090"
+  }, {
+    "name" : "page_bg_color",
+    "value" : "#121212"
+  }, {
+    "name" : "page_title_font_color",
+    "value" : "#E0E0E0"
+  }, {
+    "name" : "module_bg_color",
+    "value" : "#1A1A1A"
+  }, {
+    "name" : "module_title_font_color",
+    "value" : "#CCCCCC"
+  }, {
+    "name" : "module_icon_color",
+    "value" : "#B0B0B0"
+  }, {
+    "name" : "module_item_bg_color",
+    "value" : "#1F1F1F"
+  }, {
+    "name" : "content_main_title_font_color",
+    "value" : "#E0E0E0"
+  }, {
+    "name" : "content_sub_title_font_color",
+    "value" : "#CCCCCC"
+  }, {
+    "name" : "content_label_font_color",
+    "value" : "#A0A0A0"
+  }, {
+    "name" : "content_font_color",
+    "value" : "#FFFFFF"
+  }, {
+    "name" : "button_bg_color",
+    "value" : "#616161"
+  }, {
+    "name" : "button_font_color",
+    "value" : "#FFFFFF"
+  }, {
+    "name" : "comp_background_gray_dark",
+    "value" : "#ffe5e5ea"
+  }, {
+    "name" : "comp_background_gray",
+    "value" : "#ff1c1c1c"
+  }, {
+    "name" : "brand",
+    "value" : "#ff317af7"
+  }, {
+    "name" : "warning",
+    "value" : "#ffd94838"
+  }, {
+    "name" : "alert",
+    "value" : "#ffdb6b42"
+  }, {
+    "name" : "confirm",
+    "value" : "#ff5ba854"
+  }, {
+    "name" : "font_primary",
+    "value" : "#e5ffffff"
+  }, {
+    "name" : "font_secondary",
+    "value" : "#99ffffff"
+  }, {
+    "name" : "font_tertiary",
+    "value" : "#66ffffff"
+  }, {
+    "name" : "font_fourth",
+    "value" : "#33ffffff"
+  }, {
+    "name" : "font_emphasize",
+    "value" : "#ff317af7"
+  }, {
+    "name" : "font_on_primary",
+    "value" : "#ff000000"
+  }, {
+    "name" : "font_on_secondary",
+    "value" : "#99000000"
+  }, {
+    "name" : "font_on_tertiary",
+    "value" : "#66000000"
+  }, {
+    "name" : "font_on_fourth",
+    "value" : "#33000000"
+  }, {
+    "name" : "icon_primary",
+    "value" : "#e5ffffff"
+  }, {
+    "name" : "icon_secondary",
+    "value" : "#99ffffff"
+  }, {
+    "name" : "icon_tertiary",
+    "value" : "#66ffffff"
+  }, {
+    "name" : "icon_fourth",
+    "value" : "#33ffffff"
+  }, {
+    "name" : "icon_emphasize",
+    "value" : "#ff317af7"
+  }, {
+    "name" : "icon_sub_emphasize",
+    "value" : "#66317af7"
+  }, {
+    "name" : "icon_on_primary",
+    "value" : "#ff000000"
+  }, {
+    "name" : "icon_on_secondary",
+    "value" : "#99000000"
+  }, {
+    "name" : "icon_on_tertiary",
+    "value" : "#66000000"
+  }, {
+    "name" : "icon_on_fourth",
+    "value" : "#33000000"
+  }, {
+    "name" : "background_primary",
+    "value" : "#ff000000"
+  }, {
+    "name" : "background_secondary",
+    "value" : "#ff000000"
+  }, {
+    "name" : "background_tertiary",
+    "value" : "#ff202224"
+  }, {
+    "name" : "background_fourth",
+    "value" : "#ff2e3033"
+  }, {
+    "name" : "background_emphasize",
+    "value" : "#ff317af7"
+  }, {
+    "name" : "comp_foreground_primary",
+    "value" : "#ffe5e5e5"
+  }, {
+    "name" : "comp_background_primary",
+    "value" : "#43E5E5E5"
+  }, {
+    "name" : "comp_background_primary_trans",
+    "value" : "#33ffffff"
+  }, {
+    "name" : "comp_background_primary_contrary",
+    "value" : "#ffe5e5e5"
+  }, {
+    "name" : "comp_background_secondary",
+    "value" : "#19ffffff"
+  }, {
+    "name" : "comp_background_tertiary",
+    "value" : "#0cffffff"
+  }, {
+    "name" : "comp_background_emphasize",
+    "value" : "#ff317af7"
+  }, {
+    "name" : "comp_background_neutral",
+    "value" : "#ffffffff"
+  }, {
+    "name" : "comp_emphasize_secondary",
+    "value" : "#33317af7"
+  }, {
+    "name" : "comp_emphasize_tertiary",
+    "value" : "#19317af7"
+  }, {
+    "name" : "comp_divider",
+    "value" : "#33ffffff"
+  }, {
+    "name" : "comp_common_contrary",
+    "value" : "#ff000000"
+  }, {
+    "name" : "comp_background_focus",
+    "value" : "#ff000000"
+  }, {
+    "name" : "comp_focused_primary",
+    "value" : "#e5ffffff"
+  }, {
+    "name" : "comp_focused_secondary",
+    "value" : "#99ffffff"
+  }, {
+    "name" : "comp_focused_tertiary",
+    "value" : "#66ffffff"
+  }, {
+    "name" : "interactive_hover",
+    "value" : "#0cffffff"
+  }, {
+    "name" : "interactive_pressed",
+    "value" : "#19ffffff"
+  }, {
+    "name" : "interactive_focus",
+    "value" : "#ff317af7"
+  }, {
+    "name" : "interactive_active",
+    "value" : "#ff317af7"
+  }, {
+    "name" : "interactive_select",
+    "value" : "#33ffffff"
+  }, {
+    "name" : "interactive_click",
+    "value" : "#19ffffff"
+  }, {
+    "name" : "background_content_SearchModule",
+    "value" : "#1AFFFFFF"
+  }, {
+    "name" : "search_background_SearchModuleWithButton1",
+    "value" : "#1A1A1A"
+  }, {
+    "name" : "background_primary_SearchModuleWithIcons",
+    "value" : "#2A2A2A"
+  }, {
+    "name" : "icon_primary_SearchModuleWithIcons",
+    "value" : "#FF6B4D"
+  }, {
+    "name" : "container_background_primary_SearchModuleWithIcons",
+    "value" : "#FF6B4D"
+  }, {
+    "name" : "background_primary_SelectSearchModule",
+    "value" : "#1A1A1A"
+  }, {
+    "name" : "status_success_List_VerticalTextOrderItem1",
+    "value" : "#FF4CAF50"
+  }, {
+    "name" : "status_error_List_VerticalTextOrderItem1",
+    "value" : "#FFD32F2F"
+  }, {
+    "name" : "brand_primary_WaterFlow_VerticalGraphicOrderItem2",
+    "value" : "#4D8AFF"
+  }, {
+    "name" : "button_background_WaterFlow_VerticalGraphicOrderItem2",
+    "value" : "#2A2A2A"
+  }, {
+    "name" : "image_background_WaterFlow_VerticalGraphicOrderItem2",
+    "value" : "#3A3A3A"
+  }, {
+    "name" : "text_secondary_WaterFlow_VerticalGraphicOrderItem2",
+    "value" : "#B0B0B0"
+  }, {
+    "name" : "tabs_background_Tab_List_OrderList",
+    "value" : "#FF1E1E1E"
+  }, {
+    "name" : "card_background_MultiInfo_OrderList",
+    "value" : "#1E1E1E"
+  }, {
+    "name" : "page_background_MultiInfo_OrderList",
+    "value" : "#121212"
+  }, {
+    "name" : "background_primary_SimpleOrderInformationDisplayModule",
+    "value" : "#1E1E1E"
+  }, {
+    "name" : "gradient_end_Grid_StackGraphicTextItem",
+    "value" : "#FF333333"
+  }, {
+    "name" : "description_font_color_List_HorizontalGraphicTextDisplayItem",
+    "value" : "#E6E6E6"
+  }, {
+    "name" : "description_font_color_List_HorizontalGraphicTextDisplayItem1",
+    "value" : "#E6E6E6"
+  }, {
+    "name" : "linear_gradient_end_List_H_VerticalDoubleGraphicTextItem",
+    "value" : "#FF4A4A4A"
+  }, {
+    "name" : "card_background_List_H_VerticalGraphicTextItem",
+    "value" : "#1A1A1A"
+  }, {
+    "name" : "text_white_List_H_VerticalGraphicTextItem1",
+    "value" : "#E0E0E0FF"
+  }, {
+    "name" : "image_overlay_WaterFlow_VerticalDoubleGraphicTextItem",
+    "value" : "#FF333333"
+  }, {
+    "name" : "badge_red_WaterFlow_VerticalGraphicComplexTextItem",
+    "value" : "#BF3D3C"
+  }, {
+    "name" : "price_red_WaterFlow_VerticalGraphicComplexTextItem",
+    "value" : "#BF3D3C"
+  }, {
+    "name" : "subsidy_orange_WaterFlow_VerticalGraphicComplexTextItem",
+    "value" : "#C93D00"
+  }, {
+    "name" : "plus_pink_WaterFlow_VerticalGraphicComplexTextItem",
+    "value" : "#A94964"
+  }, {
+    "name" : "plus_bg_pink_WaterFlow_VerticalGraphicComplexTextItem",
+    "value" : "#2A1F22"
+  }, {
+    "name" : "favor_active_WaterFlow_VerticalGraphicTextShareItem",
+    "value" : "#FF6666"
+  }, {
+    "name" : "gradient_end_Horizontal1A2_StackGraphicTextItem",
+    "value" : "#FF1A1A1A"
+  }, {
+    "name" : "tab_indicator_Tab_List_HorizontalComplexGraphicTextDisplayItem",
+    "value" : "#A86F68"
+  }, {
+    "name" : "select_text_active_Tab_List_HorizontalComplexGraphicTextDisplayItem",
+    "value" : "#D08F88"
+  }, {
+    "name" : "select_background_inactive_Tab_List_HorizontalComplexGraphicTextDisplayItem",
+    "value" : "#2A2A2A"
+  }, {
+    "name" : "select_background_active_Tab_List_HorizontalComplexGraphicTextDisplayItem",
+    "value" : "#3A1F1C"
+  }, {
+    "name" : "text_secondary_Tab_List_HorizontalComplexGraphicTextDisplayItem",
+    "value" : "#999999"
+  }, {
+    "name" : "tag_text_Tab_List_HorizontalComplexGraphicTextDisplayItem",
+    "value" : "#5A94FF"
+  }, {
+    "name" : "tag_background_Tab_List_HorizontalComplexGraphicTextDisplayItem",
+    "value" : "#1A2F5A"
+  }, {
+    "name" : "price_text_Tab_List_HorizontalComplexGraphicTextDisplayItem",
+    "value" : "#FF7A50"
+  }, {
+    "name" : "recommend_text_Tab_List_HorizontalComplexGraphicTextDisplayItem",
+    "value" : "#D8B886"
+  }, {
+    "name" : "recommend_background_Tab_List_HorizontalComplexGraphicTextDisplayItem",
+    "value" : "#3A372A"
+  }, {
+    "name" : "indicator_active_Tab_List_HorizontalRankingItem",
+    "value" : "#E67A5C"
+  }, {
+    "name" : "gradient_overlay_Tab_List_H_StackGraphicTextItem",
+    "value" : "#FF1A1A1A"
+  }, {
+    "name" : "gradient_end_Vertical1A2_StackGraphicTextItem",
+    "value" : "#FF1A1A1A"
+  }, {
+    "name" : "price_primary_DisplayZone",
+    "value" : "#FF6666"
+  }, {
+    "name" : "card_background_DisplayZone",
+    "value" : "#2A2A2A"
+  }, {
+    "name" : "background_primary_DisplayZone",
+    "value" : "#1A1A1A"
+  }, {
+    "name" : "text_white_FoodList",
+    "value" : "#FFFFFFFF"
+  }, {
+    "name" : "background_overlay_FoodList",
+    "value" : "#7CFFFFFF"
+  }, {
+    "name" : "price_primary_FoodList",
+    "value" : "#FFCC6666"
+  }, {
+    "name" : "text_primary_FoodList",
+    "value" : "#FFFFFFFF"
+  }, {
+    "name" : "text_tertiary_FoodList",
+    "value" : "#FFA0A1A2"
+  }, {
+    "name" : "background_card_FoodList",
+    "value" : "#FF1E1E1E"
+  }, {
+    "name" : "brand_accent_HorizontalDiscountsTextButtonModule",
+    "value" : "#E066B3"
+  }, {
+    "name" : "background_content_HorizontalDiscountsTextButtonModule",
+    "value" : "#2A2A2A"
+  }, {
+    "name" : "gradient_start_HorizontalDiscountsTextButtonModule",
+    "value" : "#3A3A2A"
+  }, {
+    "name" : "gradient_end_HorizontalDiscountsTextButtonModule",
+    "value" : "#3A2A3A"
+  }, {
+    "name" : "font_secondary_IntegralExchange",
+    "value" : "#A0A0A0"
+  }, {
+    "name" : "background_tertiary_IntegralExchange",
+    "value" : "#3A3A3A"
+  }, {
+    "name" : "background_primary_IntegralExchange",
+    "value" : "#1E1E1E"
+  }, {
+    "name" : "tag_text_MultiInfo1",
+    "value" : "#FFFFFFFF"
+  }, {
+    "name" : "tag_background_MultiInfo1",
+    "value" : "#2D8FCC"
+  }, {
+    "name" : "rating_MultiInfo1",
+    "value" : "#FF8C5A"
+  }, {
+    "name" : "secondary_text_MultiInfo1",
+    "value" : "#FF909090"
+  }, {
+    "name" : "free_delivery_MultiInfo1",
+    "value" : "#FF8C5A"
+  }, {
+    "name" : "promotion_background_MultiInfo1",
+    "value" : "#4A3A2A"
+  }, {
+    "name" : "hot_text_MultiInfo1",
+    "value" : "#FF7A7A"
+  }, {
+    "name" : "hot_background_MultiInfo1",
+    "value" : "#4A2A2A"
+  }, {
+    "name" : "card_background_MultiInfo1",
+    "value" : "#1A000000"
+  }, {
+    "name" : "shadow_MultiInfo1",
+    "value" : "#4D000000"
+  }, {
+    "name" : "page_background_MultiInfo1",
+    "value" : "#2A2A2A"
+  }, {
+    "name" : "tag_text_MultiInfo3",
+    "value" : "#FF8C42"
+  }, {
+    "name" : "tag_background_MultiInfo3",
+    "value" : "#3A2615"
+  }, {
+    "name" : "price_primary_MultiInfo3",
+    "value" : "#FF6B5C"
+  }, {
+    "name" : "background_card_MultiInfo3",
+    "value" : "#1E1E1E"
+  }, {
+    "name" : "background_card_MultiInfo_CommentPageFlow",
+    "value" : "#1E1E1E"
+  }, {
+    "name" : "font_tertiary_MultiInfo_PersonalAttention",
+    "value" : "#8E8E93"
+  }, {
+    "name" : "background_secondary_News_H_CommercialContentList",
+    "value" : "#2A2A2A"
+  }, {
+    "name" : "font_tertiary_News_H_CommercialContentList",
+    "value" : "#B0B0B0"
+  }, {
+    "name" : "font_primary_News_H_CommercialContentList",
+    "value" : "#E0E0E0"
+  }, {
+    "name" : "background_primary_News_H_CommercialContentList",
+    "value" : "#1A1A1A"
+  }, {
+    "name" : "video_icon_bg_News_VerticalCommentTextItemList",
+    "value" : "#33FFFFFF"
+  }, {
+    "name" : "hot_comment_text_News_VerticalCommentTextItemList",
+    "value" : "#FFFFA366"
+  }, {
+    "name" : "hot_comment_bg_News_VerticalCommentTextItemList",
+    "value" : "#33FFA366"
+  }, {
+    "name" : "comment_content_News_VerticalCommentTextItemList",
+    "value" : "#B0B0B0"
+  }, {
+    "name" : "hot_comment_container_bg_News_VerticalCommentTextItemList",
+    "value" : "#1A1A1A"
+  }, {
+    "name" : "text_secondary_PointsArea",
+    "value" : "#666666"
+  }, {
+    "name" : "text_accent_PointsArea",
+    "value" : "#FF4D4D"
+  }, {
+    "name" : "background_card_PointsArea",
+    "value" : "#1A1A1A"
+  }, {
+    "name" : "background_container_PointsArea",
+    "value" : "#0D0D0D"
+  }, {
+    "name" : "footer_background_ProductWaterFlow",
+    "value" : "#FF3333"
+  }, {
+    "name" : "tag_background_ProductWaterFlow",
+    "value" : "#3A2E1E"
+  }, {
+    "name" : "tag_text_ProductWaterFlow",
+    "value" : "#D4BC9A"
+  }, {
+    "name" : "desc_text_ProductWaterFlow",
+    "value" : "#B0B0B0"
+  }, {
+    "name" : "button_background_ProductWaterFlow",
+    "value" : "#E04552"
+  }, {
+    "name" : "card_background_ProductWaterFlow",
+    "value" : "#2D2D2D"
+  }, {
+    "name" : "brand_primary_Tab_List_H_FinanceItemSinaNews",
+    "value" : "#FF6B6B"
+  }, {
+    "name" : "font_tab_inactive_Tab_List_H_FinanceItemSinaNews",
+    "value" : "#B3B3B3"
+  }, {
+    "name" : "indicator_primary_Tab_List_H_FinanceItemSinaNews",
+    "value" : "#4D8AFF"
+  }, {
+    "name" : "price_primary_Waterflow_ShoppingList1",
+    "value" : "#FF6B52"
+  }, {
+    "name" : "price_primary_Waterflow_ShoppingList2",
+    "value" : "#FF6B5A"
+  }, {
+    "name" : "shadow_primary_Waterflow_ShoppingList2",
+    "value" : "#1A000000"
+  }, {
+    "name" : "tag_font_Waterflow_ShoppingList3",
+    "value" : "#B0B0B0"
+  }, {
+    "name" : "price_primary_Waterflow_ShoppingList3",
+    "value" : "#FF6B52"
+  }, {
+    "name" : "price_primary_Waterflow_ShoppingList4",
+    "value" : "#FFA67A"
+  }, {
+    "name" : "price_detail_Waterflow_ShoppingList4",
+    "value" : "#FFB8B8"
+  }, {
+    "name" : "font_primary_Grid_BannerHorizontalTextFunctionItem",
+    "value" : "#E6E6E6"
+  }, {
+    "name" : "font_secondary_Grid_BannerHorizontalTextFunctionItem",
+    "value" : "#B0B0B0"
+  }, {
+    "name" : "background_container_List_HorizontalGraphicTextFunctionItem4",
+    "value" : "#1A1A1A"
+  }, {
+    "name" : "brand_warning_List_H_SignInItemSinaNews",
+    "value" : "#FFB85C"
+  }, {
+    "name" : "button_primary_List_H_SignInItemSinaNews",
+    "value" : "#FF4D4D"
+  }, {
+    "name" : "background_card_List_H_SignInItemSinaNews",
+    "value" : "#FF2A2A2A"
+  }, {
+    "name" : "brand_warning_Horizontal2A2_GoodsMultiEntrance",
+    "value" : "#ffd4a95c"
+  }, {
+    "name" : "brand_error_Horizontal2A2_GoodsMultiEntrance",
+    "value" : "#FF6B52"
+  }, {
+    "name" : "brand_primary_Tab_Horizontal1A3_PureTextItem",
+    "value" : "#FF6B35"
+  }, {
+    "name" : "gradient_start_Tab_Horizontal1A3_PureTextItem",
+    "value" : "#2A2A1E"
+  }, {
+    "name" : "gradient_end_Tab_Horizontal1A3_PureTextItem",
+    "value" : "#1E2A22"
+  }, {
+    "name" : "background_primary_Tab_Horizontal1A3_PureTextItem",
+    "value" : "#2A281E"
+  }, {
+    "name" : "gradient_sub_start_Tab_Horizontal1A3_PureTextItem",
+    "value" : "#1E2A1E"
+  }, {
+    "name" : "text_secondary_DiscountZone",
+    "value" : "#FF8E8F91"
+  }, {
+    "name" : "tag_background_DiscountZone",
+    "value" : "#FFD45A1D"
+  }, {
+    "name" : "price_original_DiscountZone",
+    "value" : "#FF757575"
+  }, {
+    "name" : "container_background_DiscountZone",
+    "value" : "#FF1A1A1A"
+  }, {
+    "name" : "font_primary_HWMall_SurveyCard",
+    "value" : "#E0E0E0"
+  }, {
+    "name" : "font_secondary_HWMall_SurveyCard",
+    "value" : "#B0B0B0"
+  }, {
+    "name" : "background_button_HWMall_SurveyCard",
+    "value" : "#2A2A2A"
+  }, {
+    "name" : "background_card_HWMall_SurveyCard",
+    "value" : "#1A1A1A"
+  }, {
+    "name" : "text_primary_JD_TwoRowMultiFunctionItem",
+    "value" : "#E0E0E0"
+  }, {
+    "name" : "text_secondary_JD_TwoRowMultiFunctionItem",
+    "value" : "#A0A0A0"
+  }, {
+    "name" : "text_title_JD_TwoRowMultiFunctionItem",
+    "value" : "#CCCCCC"
+  }, {
+    "name" : "background_primary_JD_TwoRowMultiFunctionItem",
+    "value" : "#1E1E1E"
+  }, {
+    "name" : "background_secondary_JD_TwoRowMultiFunctionItem",
+    "value" : "#2D2D2D"
+  }, {
+    "name" : "background_tertiary_JD_TwoRowMultiFunctionItem",
+    "value" : "#3A3A3A"
+  }, {
+    "name" : "background_white_MultiEntrance2",
+    "value" : "#1A1A1A"
+  }, {
+    "name" : "count_primary_MyAssetsBar",
+    "value" : "#FF6B6B"
+  }, {
+    "name" : "text_secondary_MyAssetsBar",
+    "value" : "#B0B0B0"
+  }, {
+    "name" : "member_advertise_font_Jingdong_AccountInformationModule",
+    "value" : "#F1E9E3"
+  }, {
+    "name" : "member_advertise_gradient_start_Jingdong_AccountInformationModule",
+    "value" : "#38312F"
+  }, {
+    "name" : "member_advertise_gradient_end_Jingdong_AccountInformationModule",
+    "value" : "#897865"
+  }, {
+    "name" : "divider_light_Jingdong_AccountInformationModule",
+    "value" : "#2A2A2A"
+  }, {
+    "name" : "remind_font_primary_Jingdong_AccountInformationModule",
+    "value" : "#D45D6D"
+  }, {
+    "name" : "remind_background_Jingdong_AccountInformationModule",
+    "value" : "#2A1A1C"
+  }, {
+    "name" : "text_primary_MemberPointsCard",
+    "value" : "#FFFFFFFF"
+  }, {
+    "name" : "gradient_start_MemberPointsCard",
+    "value" : "#FF1A1A1A"
+  }, {
+    "name" : "gradient_end_MemberPointsCard",
+    "value" : "#FF666666"
+  }, {
+    "name" : "button_text_primary_MultiFunctionAccountInformationDisplayModule1",
+    "value" : "#FFD9B8"
+  }, {
+    "name" : "button_background_primary_MultiFunctionAccountInformationDisplayModule1",
+    "value" : "#4A3C2A"
+  }, {
+    "name" : "text_secondary_PersonPage",
+    "value" : "#6A6A6A"
+  }, {
+    "name" : "background_primary_PersonPage",
+    "value" : "#1A1A1A"
+  }, {
+    "name" : "text_primary_FiveScenarioTicketBookingModule",
+    "value" : "#FFFFFFFF"
+  }, {
+    "name" : "text_secondary_FiveScenarioTicketBookingModule",
+    "value" : "#B0B0B0"
+  }, {
+    "name" : "background_primary_FiveScenarioTicketBookingModule",
+    "value" : "#1A1A1A"
+  }, {
+    "name" : "background_primary_FourScenarioTicketBookingModule",
+    "value" : "#FF1E1E1E"
+  }, {
+    "name" : "font_primary_FourScenarioTicketBookingModule",
+    "value" : "#FFFFFFFF"
+  }, {
+    "name" : "font_secondary_FourScenarioTicketBookingModule",
+    "value" : "#FFB0B0B0"
+  }, {
+    "name" : "mask_dark_OrderMenuModule",
+    "value" : "#66000000"
+  }, {
+    "name" : "groundColor_OrderMenuModule",
+    "value" : "#FF000000"
+  }, {
+    "name" : "background_primary_MultiInfo_GoodSelection3",
+    "value" : "#FF1E1E1E"
+  }, {
+    "name" : "font_secondary_MultiInfo_GoodSelection3",
+    "value" : "#B0B0B0"
+  }, {
+    "name" : "font_tertiary_MultiInfo_GoodSelection3",
+    "value" : "#8A8A8A"
+  }, {
+    "name" : "background_secondary_MultiInfo_GoodSelection3",
+    "value" : "#FF2A2A2A"
+  }, {
+    "name" : "background_tertiary_MultiInfo_GoodSelection3",
+    "value" : "#FF121212"
+  }, {
+    "name" : "background_primary_MultiPage_PureWordListItem",
+    "value" : "#1A1A1A"
+  }, {
+    "name" : "tab_background_MultiPage_PureWordListItem",
+    "value" : "#2D2D2D"
+  }, {
+    "name" : "tab_active_MultiPage_PureWordListItem",
+    "value" : "#E6E6E6"
+  }, {
+    "name" : "tab_inactive_MultiPage_PureWordListItem",
+    "value" : "#B3B3B3"
+  }, {
+    "name" : "category_background_MultiPage_PureWordListItem",
+    "value" : "#262626"
+  }, {
+    "name" : "font_tertiary_MallInfoDisplayModule1",
+    "value" : "#FFA0A0A0"
+  }, {
+    "name" : "text_secondary_MallInfoDisplayModule2",
+    "value" : "#FFA0A0A0"
+  }, {
+    "name" : "font_clicked_List_H_PureTextItem",
+    "value" : "#FFFFFFFF"
+  }, {
+    "name" : "font_unclicked_List_H_PureTextItem",
+    "value" : "#B0B0B0"
+  }, {
+    "name" : "divider_primary_List_XinLangNews",
+    "value" : "#3A3A3C"
+  }, {
+    "name" : "brand_primary_List_XinLangNews",
+    "value" : "#FF6B55"
+  }, {
+    "name" : "font_tertiary_List_XinLangNews",
+    "value" : "#8E8E93"
+  }, {
+    "name" : "font_tertiary_red_List_XinLangNews",
+    "value" : "#E0381C"
+  }, {
+    "name" : "background_card_ArticleIconList",
+    "value" : "#1E1E1E"
+  }, {
+    "name" : "font_primary_List_VerticalNewsItem",
+    "value" : "#E0E0E0"
+  }, {
+    "name" : "accent_primary_List_VerticalNewsItem",
+    "value" : "#FF6B66"
+  }, {
+    "name" : "font_secondary_List_VerticalNewsItem",
+    "value" : "#B0B0B0"
+  }, {
+    "name" : "background_primary_List_VerticalNewsItem",
+    "value" : "#1A1A1A"
+  }, {
+    "name" : "icon_secondary_MultiList_HotSearchModule",
+    "value" : "#B0B0B0"
+  }, {
+    "name" : "background_item_MultiList_HotSearchModule",
+    "value" : "#1A1A1A"
+  }, {
+    "name" : "text_secondary_News_HorizontalGraphicTextItem",
+    "value" : "#FFA0A0A0"
+  }, {
+    "name" : "background_primary_News_HorizontalGraphicTextItem",
+    "value" : "#FF1E1E1E"
+  }, {
+    "name" : "text_on_accent_News_H_PodcastList",
+    "value" : "#FFFFFFFF"
+  }, {
+    "name" : "accent_audio_News_H_PodcastList",
+    "value" : "#FF7A7A"
+  }, {
+    "name" : "accent_other_News_H_PodcastList",
+    "value" : "#FFBF40"
+  }, {
+    "name" : "indicator_selected_News_SwiperAudioBookList",
+    "value" : "#FFA0A0A0"
+  }, {
+    "name" : "background_primary_News_SwiperAudioBookList",
+    "value" : "#FF1E1E1E"
+  }, {
+    "name" : "tag_text_News_SwiperAudioBookList",
+    "value" : "#FFE57373"
+  }, {
+    "name" : "tag_background_News_SwiperAudioBookList",
+    "value" : "#FF424242"
+  }, {
+    "name" : "brand_primary_News_SwiperHorizontalCarRank",
+    "value" : "#FF7043"
+  }, {
+    "name" : "font_primary_News_SwiperHorizontalCarRank",
+    "value" : "#E0E0E0"
+  }, {
+    "name" : "font_secondary_News_SwiperHorizontalCarRank",
+    "value" : "#B0B0B0"
+  }, {
+    "name" : "background_card_News_SwiperHorizontalCarRank",
+    "value" : "#1E1E1E"
+  }, {
+    "name" : "rank_second_News_SwiperHorizontalCarRank",
+    "value" : "#FFA726"
+  }, {
+    "name" : "rank_third_News_SwiperHorizontalCarRank",
+    "value" : "#FFD54F"
+  }, {
+    "name" : "font_tertiary_News_SwiperHorizontalCarRank",
+    "value" : "#757575"
+  }, {
+    "name" : "description_font_color_News_VerticalNovelInfoListItem",
+    "value" : "#E6E6E6"
+  }, {
+    "name" : "tag_font_color_News_VerticalNovelInfoListItem",
+    "value" : "#FFFFFFFF"
+  }, {
+    "name" : "divider_primary_News_VerticalVideoList1",
+    "value" : "#1AFFFFFF"
+  }, {
+    "name" : "background_primary_News_VerticalVideoList1",
+    "value" : "#ff1a1a1a"
+  }, {
+    "name" : "play_button_background_News_VerticalVideoList1",
+    "value" : "#801A1A1A"
+  }, {
+    "name" : "play_icon_News_VerticalVideoList1",
+    "value" : "#E6E6E6"
+  }, {
+    "name" : "info_text_News_VerticalVideoList1",
+    "value" : "#E6E6E6"
+  }, {
+    "name" : "divider_secondary_News_VerticalVideoList2",
+    "value" : "#1AFFFFFF"
+  }, {
+    "name" : "background_primary_News_VerticalVideoList2",
+    "value" : "#FF1A1A1A"
+  }, {
+    "name" : "text_primary_News_VerticalVideoList2",
+    "value" : "#FFFFFFFF"
+  }, {
+    "name" : "overlay_primary_News_VerticalVideoList2",
+    "value" : "#801A1A1A"
+  }, {
+    "name" : "follow_text_Xinlang_PublisherModule",
+    "value" : "#8A8985"
+  }, {
+    "name" : "title_background_Xinlang_PublisherModule",
+    "value" : "#2A2E5C"
+  }, {
+    "name" : "text_clicked_SwiperFlatten_PureTextItem",
+    "value" : "#FFFFFFFF"
+  }, {
+    "name" : "text_normal_SwiperFlatten_PureTextItem",
+    "value" : "#FFA0A0A0"
+  }, {
+    "name" : "background_primary_TabBarBasic",
+    "value" : "#FF1E1E1E"
+  }, {
+    "name" : "promotion_primary_JD_ShoppingCart",
+    "value" : "#FF8C66"
+  }, {
+    "name" : "promotion_background_JD_ShoppingCart",
+    "value" : "#3A1F1A"
+  }, {
+    "name" : "font_secondary_JD_ShoppingCart",
+    "value" : "#B0B0B0"
+  }, {
+    "name" : "font_primary_JD_ShoppingCart",
+    "value" : "#E0E0E0"
+  }, {
+    "name" : "white_JD_ShoppingCart",
+    "value" : "#1E1E1E"
+  }, {
+    "name" : "background_secondary_JD_ShoppingCart",
+    "value" : "#2A2A2A"
+  }, {
+    "name" : "warranty_primary_JD_ShoppingCart",
+    "value" : "#80cc9944"
+  }, {
+    "name" : "subsidy_primary_JD_ShoppingCart",
+    "value" : "#4CAF50"
+  }, {
+    "name" : "font_tertiary_JD_ShoppingCart",
+    "value" : "#808080"
+  }, {
+    "name" : "quantity_background_JD_ShoppingCart",
+    "value" : "#ff1e1e1e"
+  }, {
+    "name" : "brand_primary_JD_ShoppingCart",
+    "value" : "#FF6666"
+  }, {
+    "name" : "divider_primary_JD_ShoppingCart",
+    "value" : "#3A3A3A"
+  }, {
+    "name" : "background_primary_JD_ShoppingCart",
+    "value" : "#1A1A1A"
+  }, {
+    "name" : "brand_primary_ShopCart",
+    "value" : "#FF8A4D"
+  }, {
+    "name" : "checkbox_unselected_ShopCart",
+    "value" : "#FF666666"
+  }, {
+    "name" : "checkbox_selected_ShopCart",
+    "value" : "#FF4D4D"
+  }, {
+    "name" : "background_card_ShopCart",
+    "value" : "#FF1A1A1A"
+  }, {
+    "name" : "background_card_CourseGuideView",
+    "value" : "#FF1E1E1E"
+  }, {
+    "name" : "font_primary_EducationLessonTileCard",
+    "value" : "#E6E6E6"
+  }, {
+    "name" : "font_secondary_EducationLessonTileCard",
+    "value" : "#B0B0B0"
+  }, {
+    "name" : "font_tertiary_EducationLessonTileCard",
+    "value" : "#8A8A8A"
+  }, {
+    "name" : "background_card_EducationLessonTileCard",
+    "value" : "#1A1A1AFF"
+  }, {
+    "name" : "font_primary_LessonInfoCard",
+    "value" : "#E0E0E0"
+  }, {
+    "name" : "font_secondary_LessonInfoCard",
+    "value" : "#B0B0B0"
+  }, {
+    "name" : "font_tertiary_LessonInfoCard",
+    "value" : "#808080"
+  }, {
+    "name" : "price_primary_LessonInfoCard",
+    "value" : "#FF8A65"
+  }, {
+    "name" : "price_member_LessonInfoCard",
+    "value" : "#D4B97A"
+  }, {
+    "name" : "background_card_LessonInfoCard",
+    "value" : "#1A1A1A"
+  }, {
+    "name" : "tag_text_LessonInfoCard",
+    "value" : "#8BB2FF"
+  }, {
+    "name" : "tag_background_LessonInfoCard",
+    "value" : "#2A3B5C"
+  }, {
+    "name" : "font_secondary_List_VerticalExamItem",
+    "value" : "#A0A0A0"
+  }, {
+    "name" : "font_primary_List_VerticalExamItem",
+    "value" : "#E0E0E0"
+  }, {
+    "name" : "background_card_List_VerticalExamItem",
+    "value" : "#1E1E1E"
+  }, {
+    "name" : "background_page_List_VerticalExamItem",
+    "value" : "#0A0A0A"
+  }, {
+    "name" : "background_card_List_VerticalStudyTaskProcessItem",
+    "value" : "#1A1A1A"
+  }, {
+    "name" : "font_tertiary_List_VerticalStudyTaskProcessItem",
+    "value" : "#B0B0B0"
+  }, {
+    "name" : "font_primary_Swiper_AILessonInfoCard",
+    "value" : "#E0E0E0"
+  }, {
+    "name" : "brand_accent_Swiper_AILessonInfoCard",
+    "value" : "#FF8D4D"
+  }, {
+    "name" : "gradient_start_Swiper_AILessonInfoCard",
+    "value" : "#3A2E1E"
+  }, {
+    "name" : "gradient_end_Swiper_AILessonInfoCard",
+    "value" : "#1A1A1A"
+  }, {
+    "name" : "font_secondary_Swiper_AILessonInfoCard",
+    "value" : "#A0A0A0"
+  }, {
+    "name" : "font_disabled_Swiper_AILessonInfoCard",
+    "value" : "#707070"
+  }, {
+    "name" : "font_tertiary_Swiper_AILessonInfoCard",
+    "value" : "#808080"
+  }, {
+    "name" : "background_card_Swiper_AILessonInfoCard",
+    "value" : "#2A2A2A"
+  }, {
+    "name" : "tag_text_Swiper_AILessonInfoCard",
+    "value" : "#8BB2E8"
+  }, {
+    "name" : "tag_background_Swiper_AILessonInfoCard",
+    "value" : "#2A3F5C"
+  } ]
+}
