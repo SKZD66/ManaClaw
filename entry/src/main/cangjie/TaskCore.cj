@@ -1,5 +1,6 @@
 package ohos_app_cangjie_entry
 
+import encoding.json.*
 import std.collection.*
 import std.convert.*
 import std.fs.*
@@ -7,35 +8,35 @@ import std.random.*
 import std.time.*
 
 public enum TaskStatus {
-    | LocalCreated
-    | RemoteCreated
-    | WorktreeCreated
-    | Running
-    | Completed
-    | Failed
-    | Stopped
-    | Unknown
-    | Deleted
+    | local_created
+    | remote_created
+    | worktree_created
+    | running
+    | completed
+    | failed
+    | stopped
+    | unknown
+    | deleted
 }
 
 public class Result<T> {
     public let isOk: Bool
-    public let value: ?T
-    public let error: ?String
+    public let value: Option<T>
+    public let error: Option<String>
 
-    public init(isOk: Bool, value: ?T, error: ?String) {
+    public init(isOk: Bool, value: Option<T>, error: Option<String>) {
         this.isOk = isOk
         this.value = value
         this.error = error
     }
 }
 
-public func ok<T>(value: T): Result<T> {
+public func taskOk<T>(value: T): Result<T> {
     return Result<T>(true, Some(value), None)
 }
 
-public func fail<T>(error: String): Result<T> {
-    return Result<T>(false, None, Some(error))
+public func taskFail<T>(message: String): Result<T> {
+    return Result<T>(false, None, Some(message))
 }
 
 public class Task {
@@ -53,7 +54,7 @@ public class Task {
     public var createdAt: Int64
     public var updatedAt: Int64
     public var lastLogOffset: Int64
-    public var lastError: ?String
+    public var lastError: Option<String>
 
     public init(
         id: String,
@@ -70,7 +71,7 @@ public class Task {
         createdAt: Int64,
         updatedAt: Int64,
         lastLogOffset: Int64,
-        lastError: ?String
+        lastError: Option<String>
     ) {
         this.id = id
         this.title = title
@@ -136,7 +137,7 @@ public class RemoteTaskRow {
     public let taskId: String
     public let status: TaskStatus
     public let live: Bool
-    public let exitCode: ?Int64
+    public let exitCode: Option<Int64>
     public let repo: String
     public let branch: String
     public let worktree: String
@@ -145,7 +146,7 @@ public class RemoteTaskRow {
         taskId: String,
         status: TaskStatus,
         live: Bool,
-        exitCode: ?Int64,
+        exitCode: Option<Int64>,
         repo: String,
         branch: String,
         worktree: String
@@ -164,7 +165,7 @@ public class RemoteTaskStatus {
     public let taskId: String
     public let status: TaskStatus
     public let live: Bool
-    public let exitCode: ?Int64
+    public let exitCode: Option<Int64>
     public let repo: String
     public let worktree: String
     public let branch: String
@@ -174,7 +175,7 @@ public class RemoteTaskStatus {
         taskId: String,
         status: TaskStatus,
         live: Bool,
-        exitCode: ?Int64,
+        exitCode: Option<Int64>,
         repo: String,
         worktree: String,
         branch: String,
@@ -196,9 +197,9 @@ public class TaskDetail {
     public let log: String
     public let stderr: String
     public let live: Bool
-    public let exitCode: ?Int64
+    public let exitCode: Option<Int64>
 
-    public init(task: Task, log: String, stderr: String, live: Bool, exitCode: ?Int64) {
+    public init(task: Task, log: String, stderr: String, live: Bool, exitCode: Option<Int64>) {
         this.task = task
         this.log = log
         this.stderr = stderr
@@ -220,62 +221,81 @@ public interface RemoteTaskGateway {
     func gitSummary(taskId: String): Result<String>
 }
 
+private let TASK_STORE_PROCESS_CACHE = HashMap<String, ArrayList<Task>>()
+
 public class TaskStore {
     private let storageDir: Path
     private let tasksFile: Path
+    private let storageKey: String
+    private var memoryTasks: Option<ArrayList<Task>> = None
 
     public init() {
-        let base = Path(".cc-mobile-local")
-        storageDir = base
-        tasksFile = base.join("tasks.json")
-        ensureDir(storageDir)
+        let base = taskCoreStoragePath(".cc-mobile-local")
+        this.storageDir = base
+        this.tasksFile = base.join("tasks.json")
+        this.storageKey = base.toString()
+        ensureDirectory(base)
     }
 
     public init(storageDir: String) {
-        let base = Path(storageDir)
+        let base = taskCoreStoragePath(storageDir)
         this.storageDir = base
-        tasksFile = base.join("tasks.json")
-        ensureDir(base)
+        this.tasksFile = base.join("tasks.json")
+        this.storageKey = base.toString()
+        ensureDirectory(base)
     }
 
-//    public func loadTasks(): ArrayList<Task> {
-//        if (!File.exists(tasksFile)) {
-//            return ArrayList<Task>()
-//        }
-//        let text = String.fromUtf8(File.readFrom(tasksFile))
-//        return TaskJson.decodeTasks(text)
-//    }
     public func loadTasks(): ArrayList<Task> {
-    try {
-        let text = String.fromUtf8(File.readFrom(tasksFile))
-        return TaskJson.decodeTasks(text)
-    } catch (e: FSException) {
-        return ArrayList<Task>()
+        match (TASK_STORE_PROCESS_CACHE.get(storageKey)) {
+            case Some(tasks) =>
+                memoryTasks = Some(cloneTasks(tasks))
+                return cloneTasks(tasks)
+            case None => ()
+        }
+
+        match (memoryTasks) {
+            case Some(tasks) => return cloneTasks(tasks)
+            case None => ()
+        }
+
+        try {
+            let tasks = TaskCoreJson.decodeTasks(String.fromUtf8(File.readFrom(tasksFile)))
+            memoryTasks = Some(cloneTasks(tasks))
+            TASK_STORE_PROCESS_CACHE[storageKey] = cloneTasks(tasks)
+            return tasks
+        } catch (e: Exception) {
+            return ArrayList<Task>()
+        }
     }
-}
 
     public func saveTasks(tasks: ArrayList<Task>): Unit {
-        ensureDir(storageDir)
-        File.writeTo(tasksFile, TaskJson.encodeTasks(tasks).toArray())
+        memoryTasks = Some(cloneTasks(tasks))
+        TASK_STORE_PROCESS_CACHE[storageKey] = cloneTasks(tasks)
+        try {
+            ensureDirectory(storageDir)
+            File.writeTo(tasksFile, TaskCoreJson.encodeTasks(tasks).toArray())
+        } catch (e: Exception) {
+            ()
+        }
     }
 
     public func upsertTask(task: Task): Unit {
         let tasks = loadTasks()
-        var updated = false
+        var replaced = false
         for (i in 0..tasks.size) {
             if (tasks[i].id == task.id) {
                 tasks[i] = task
-                updated = true
+                replaced = true
                 break
             }
         }
-        if (!updated) {
+        if (!replaced) {
             tasks.append(task)
         }
         saveTasks(tasks)
     }
 
-    public func findTask(taskId: String): ?Task {
+    public func findTask(taskId: String): Option<Task> {
         for (task in loadTasks()) {
             if (task.id == taskId) {
                 return Some(task)
@@ -285,10 +305,12 @@ public class TaskStore {
     }
 
     public func markDeleted(taskId: String): Unit {
-        if (let Some(task) <- findTask(taskId)) {
-            task.status = TaskStatus.Deleted
-            task.updatedAt = nowSeconds()
-            upsertTask(task)
+        match (findTask(taskId)) {
+            case Some(task) =>
+                task.status = TaskStatus.deleted
+                task.updatedAt = taskCoreNowSeconds()
+                upsertTask(task)
+            case None => ()
         }
     }
 }
@@ -296,43 +318,48 @@ public class TaskStore {
 public class ServerStore {
     private let storageDir: Path
     private let serversFile: Path
+    private var memoryServers: Option<ArrayList<ServerConfig>> = None
 
     public init() {
-        let base = Path(".cc-mobile-local")
-        storageDir = base
-        serversFile = base.join("servers.json")
-        ensureDir(storageDir)
+        let base = taskCoreStoragePath(".cc-mobile-local")
+        this.storageDir = base
+        this.serversFile = base.join("servers.json")
+        ensureDirectory(base)
     }
 
     public init(storageDir: String) {
-        let base = Path(storageDir)
+        let base = taskCoreStoragePath(storageDir)
         this.storageDir = base
-        serversFile = base.join("servers.json")
-        ensureDir(base)
+        this.serversFile = base.join("servers.json")
+        ensureDirectory(base)
     }
 
-//    public func loadServers(): ArrayList<ServerConfig> {
-//        if (!File.exists(serversFile)) {
-//            return ArrayList<ServerConfig>()
-//        }
-//        let text = String.fromUtf8(File.readFrom(serversFile))
-//        return TaskJson.decodeServers(text)
-//    }
     public func loadServers(): ArrayList<ServerConfig> {
-    try {
-        let text = String.fromUtf8(File.readFrom(serversFile))
-        return TaskJson.decodeServers(text)
-    } catch (e: FSException) {
-        return ArrayList<ServerConfig>()
+        match (memoryServers) {
+            case Some(servers) => return cloneServers(servers)
+            case None => ()
+        }
+
+        try {
+            let servers = TaskCoreJson.decodeServers(String.fromUtf8(File.readFrom(serversFile)))
+            memoryServers = Some(cloneServers(servers))
+            return servers
+        } catch (e: Exception) {
+            return ArrayList<ServerConfig>()
+        }
     }
-}
 
     public func saveServers(servers: ArrayList<ServerConfig>): Unit {
-        ensureDir(storageDir)
-        File.writeTo(serversFile, TaskJson.encodeServers(servers).toArray())
+        memoryServers = Some(cloneServers(servers))
+        try {
+            ensureDirectory(storageDir)
+            File.writeTo(serversFile, TaskCoreJson.encodeServers(servers).toArray())
+        } catch (e: Exception) {
+            ()
+        }
     }
 
-    public func getDefaultServer(): ?ServerConfig {
+    public func getDefaultServer(): Option<ServerConfig> {
         let servers = loadServers()
         if (servers.size == 0) {
             return None
@@ -342,15 +369,15 @@ public class ServerStore {
 
     public func upsertServer(server: ServerConfig): Unit {
         let servers = loadServers()
-        var updated = false
+        var replaced = false
         for (i in 0..servers.size) {
             if (servers[i].id == server.id) {
                 servers[i] = server
-                updated = true
+                replaced = true
                 break
             }
         }
-        if (!updated) {
+        if (!replaced) {
             servers.append(server)
         }
         saveServers(servers)
@@ -373,12 +400,12 @@ public class TaskService {
         prompt: String,
         mode: RunMode
     ): Result<Task> {
-        let validationError = validateSubmit(repoPath, title, prompt)
-        if (validationError.size > 0) {
-            return fail<Task>(validationError)
+        let error = validateTaskInput(repoPath, title, prompt)
+        if (error.size > 0) {
+            return taskFail<Task>(error)
         }
 
-        let now = nowSeconds()
+        let now = taskCoreNowSeconds()
         let taskId = generateTaskId()
         let task = Task(
             taskId,
@@ -390,7 +417,7 @@ public class TaskService {
             deriveWorktreePath(taskId),
             deriveTmuxSession(taskId),
             deriveRemoteTaskDir(taskId),
-            TaskStatus.LocalCreated,
+            TaskStatus.local_created,
             mode,
             now,
             now,
@@ -399,31 +426,31 @@ public class TaskService {
         )
         taskStore.upsertTask(task)
 
-        let wrappedPrompt = wrapPrompt(prompt, mode)
-        let created = gateway.createTask(task, wrappedPrompt)
+        let created = gateway.createTask(task, wrapPrompt(prompt, mode))
         if (!created.isOk) {
-            task.lastError = resultError(created)
-            task.updatedAt = nowSeconds()
+            task.lastError = resultMessage(created)
+            task.updatedAt = taskCoreNowSeconds()
             taskStore.upsertTask(task)
-            return fail<Task>(resultErrorText(created))
+            return taskFail<Task>(resultMessageText(created))
         }
 
-        task.status = TaskStatus.WorktreeCreated
-        task.updatedAt = nowSeconds()
+        task.status = TaskStatus.worktree_created
+        task.updatedAt = taskCoreNowSeconds()
         taskStore.upsertTask(task)
 
         let started = gateway.startTask(task)
         if (!started.isOk) {
-            task.lastError = resultError(started)
-            task.updatedAt = nowSeconds()
+            task.lastError = resultMessage(started)
+            task.updatedAt = taskCoreNowSeconds()
             taskStore.upsertTask(task)
-            return fail<Task>(resultErrorText(started))
+            return taskFail<Task>(resultMessageText(started))
         }
 
-        task.status = TaskStatus.Running
-        task.updatedAt = nowSeconds()
+        task.status = TaskStatus.running
+        task.updatedAt = taskCoreNowSeconds()
+        task.lastError = None
         taskStore.upsertTask(task)
-        return ok<Task>(task)
+        return taskOk<Task>(task)
     }
 
     public func submitTask(server: ServerConfig, repoPath: String, title: String, prompt: String): Result<Task> {
@@ -431,141 +458,161 @@ public class TaskService {
     }
 
     public func refreshTasks(server: ServerConfig): Result<ArrayList<Task>> {
-        let remoteResult = gateway.listTasks(server)
-        if (!remoteResult.isOk) {
-            return fail<ArrayList<Task>>(resultErrorText(remoteResult))
+        let remoteRowsResult = gateway.listTasks(server)
+        if (!remoteRowsResult.isOk) {
+            return taskFail<ArrayList<Task>>(resultMessageText(remoteRowsResult))
         }
 
         let tasks = taskStore.loadTasks()
-        let remoteRows = remoteResult.value.getOrThrow()
+        let remoteRows = remoteRowsResult.value.getOrThrow()
         let seen = HashMap<String, Bool>()
         for (row in remoteRows) {
             seen[row.taskId] = true
-            if (let Some(local) <- findIn(tasks, row.taskId)) {
-                if (isDeleted(local.status)) {
-                    continue
-                }
-                local.status = inferStatus(row.status, row.exitCode)
-                local.repoPath = row.repo
-                local.branchName = row.branch
-                local.worktreePath = row.worktree
-                local.updatedAt = nowSeconds()
-            } else {
-                let now = nowSeconds()
-                tasks.append(Task(
-                    row.taskId,
-                    row.taskId,
-                    "",
-                    server.id,
-                    row.repo,
-                    row.branch,
-                    row.worktree,
-                    deriveTmuxSession(row.taskId),
-                    deriveRemoteTaskDir(row.taskId),
-                    inferStatus(row.status, row.exitCode),
-                    RunMode.run,
-                    now,
-                    now,
-                    0,
-                    None
-                ))
+            match (findTaskInMemory(tasks, row.taskId)) {
+                case Some(task) =>
+                    if (!isDeleted(task.status)) {
+                        applyRemoteRow(task, row)
+                    }
+                case None =>
+                    tasks.append(taskFromRemoteRow(row, server.id))
             }
         }
 
         for (task in tasks) {
             if (task.serverId == server.id && !seen.contains(task.id) && !isDeleted(task.status)) {
-                task.status = TaskStatus.Unknown
-                task.updatedAt = nowSeconds()
+                task.status = TaskStatus.unknown
+                task.updatedAt = taskCoreNowSeconds()
             }
         }
 
         taskStore.saveTasks(tasks)
-        return ok<ArrayList<Task>>(visibleTasksForServer(tasks, server.id))
+        return taskOk<ArrayList<Task>>(visibleTasks(tasks, server.id))
     }
 
     public func refreshTask(taskId: String): Result<TaskDetail> {
-        let local = taskStore.findTask(taskId)
-        if (let None <- local) {
-            return fail<TaskDetail>("Task not found: ${taskId}")
+        let task = match (taskStore.findTask(taskId)) {
+            case Some(value) => value
+            case None => return taskFail<TaskDetail>("Task not found: ${taskId}")
         }
 
-        let task = local.getOrThrow()
-        let statusResult = gateway.getTaskStatus(taskId)
-        if (!statusResult.isOk) {
-            task.lastError = resultError(statusResult)
-            task.updatedAt = nowSeconds()
+        let remoteStatus = gateway.getTaskStatus(taskId)
+        if (!remoteStatus.isOk) {
+            task.status = TaskStatus.unknown
+            task.lastError = resultMessage(remoteStatus)
+            task.updatedAt = taskCoreNowSeconds()
             taskStore.upsertTask(task)
-            return fail<TaskDetail>(resultErrorText(statusResult))
+            return taskFail<TaskDetail>(resultMessageText(remoteStatus))
         }
 
-        let remote = statusResult.value.getOrThrow()
-        task.status = inferStatus(remote.status, remote.exitCode)
-        task.repoPath = remote.repo
-        task.worktreePath = remote.worktree
-        task.branchName = remote.branch
-        task.tmuxSession = remote.tmux
-        task.updatedAt = nowSeconds()
+        let status = remoteStatus.value.getOrThrow()
+        applyRemoteStatus(task, status)
+
+        let logResult = gateway.tailLog(taskId, 200)
+        let stderrResult = gateway.tailStderr(taskId)
+        if (!logResult.isOk) {
+            task.lastError = resultMessage(logResult)
+        } else if (!stderrResult.isOk) {
+            task.lastError = resultMessage(stderrResult)
+        } else {
+            task.lastError = None
+        }
+        task.updatedAt = taskCoreNowSeconds()
         taskStore.upsertTask(task)
 
-        let log = gateway.tailLog(taskId, 200)
-        let stderr = gateway.tailStderr(taskId)
-        return ok<TaskDetail>(TaskDetail(
+        return taskOk<TaskDetail>(TaskDetail(
             task,
-            resultValueOr(log, ""),
-            resultValueOr(stderr, ""),
-            remote.live,
-            remote.exitCode
+            resultStringOrEmpty(logResult),
+            resultStringOrEmpty(stderrResult),
+            status.live,
+            status.exitCode
         ))
     }
 
     public func stopTask(taskId: String): Result<Unit> {
+        let task = match (taskStore.findTask(taskId)) {
+            case Some(value) => value
+            case None => return taskFail<Unit>("Task not found: ${taskId}")
+        }
         let stopped = gateway.stopTask(taskId)
         if (!stopped.isOk) {
-            return fail<Unit>(resultErrorText(stopped))
-        }
-        if (let Some(task) <- taskStore.findTask(taskId)) {
-            task.status = TaskStatus.Stopped
-            task.updatedAt = nowSeconds()
+            task.lastError = resultMessage(stopped)
+            task.updatedAt = taskCoreNowSeconds()
             taskStore.upsertTask(task)
+            return taskFail<Unit>(resultMessageText(stopped))
         }
-        return ok<Unit>(())
+        task.status = TaskStatus.stopped
+        task.lastError = None
+        task.updatedAt = taskCoreNowSeconds()
+        taskStore.upsertTask(task)
+        return taskOk<Unit>(())
     }
 
     public func softDeleteTask(taskId: String): Result<Unit> {
+        let task = match (taskStore.findTask(taskId)) {
+            case Some(value) => value
+            case None => return taskFail<Unit>("Task not found: ${taskId}")
+        }
         let deleted = gateway.softDeleteTask(taskId)
         if (!deleted.isOk) {
-            return fail<Unit>(resultErrorText(deleted))
+            task.lastError = resultMessage(deleted)
+            task.updatedAt = taskCoreNowSeconds()
+            taskStore.upsertTask(task)
+            return taskFail<Unit>(resultMessageText(deleted))
         }
-        taskStore.markDeleted(taskId)
-        return ok<Unit>(())
+        task.status = TaskStatus.deleted
+        task.lastError = None
+        task.updatedAt = taskCoreNowSeconds()
+        taskStore.upsertTask(task)
+        return taskOk<Unit>(())
     }
 
     public func loadGitSummary(taskId: String): Result<String> {
+        if (let None <- taskStore.findTask(taskId)) {
+            return taskFail<String>("Task not found: ${taskId}")
+        }
         return gateway.gitSummary(taskId)
     }
 }
 
 public class FakeRemoteTaskGateway <: RemoteTaskGateway {
+    public var failInit: Bool = false
     public var failCreate: Bool = false
     public var failStart: Bool = false
-    public let createdPrompts: HashMap<String, String> = HashMap<String, String>()
-    private let rows: HashMap<String, RemoteTaskStatus> = HashMap<String, RemoteTaskStatus>()
+    public var failList: Bool = false
+    public var failStatus: Bool = false
+    public var failStop: Bool = false
+    public var failSoftDelete: Bool = false
+    public var failGitSummary: Bool = false
+    public var createCallCount: Int64 = 0
+    public var startCallCount: Int64 = 0
+    public var stopCallCount: Int64 = 0
+    public var softDeleteCallCount: Int64 = 0
+    public let wrappedPrompts = HashMap<String, String>()
+
+    private let tasks = HashMap<String, RemoteTaskStatus>()
+    private let logs = HashMap<String, String>()
+    private let stderrs = HashMap<String, String>()
+    private var gitText: String = "--- STATUS ---\n M fake.cj\n\n--- DIFF STAT ---\nfake.cj | 1 +\n\n--- RECENT COMMITS ---\nabc123 fake\n"
 
     public init() {}
 
     public func initRemote(server: ServerConfig): Result<InitResult> {
         let _ = server
-        return ok<InitResult>(InitResult("ok"))
+        if (failInit) {
+            return taskFail<InitResult>("fake initRemote failed")
+        }
+        return taskOk<InitResult>(InitResult("ok"))
     }
 
     public func createTask(task: Task, wrappedPrompt: String): Result<Unit> {
+        createCallCount += 1
         if (failCreate) {
-            return fail<Unit>("fake createTask failed")
+            return taskFail<Unit>("fake createTask failed")
         }
-        createdPrompts[task.id] = wrappedPrompt
-        rows[task.id] = RemoteTaskStatus(
+        wrappedPrompts[task.id] = wrappedPrompt
+        tasks[task.id] = RemoteTaskStatus(
             task.id,
-            TaskStatus.WorktreeCreated,
+            TaskStatus.worktree_created,
             false,
             None,
             task.repoPath,
@@ -573,16 +620,19 @@ public class FakeRemoteTaskGateway <: RemoteTaskGateway {
             task.branchName,
             task.tmuxSession
         )
-        return ok<Unit>(())
+        logs[task.id] = "created ${task.id}"
+        stderrs[task.id] = ""
+        return taskOk<Unit>(())
     }
 
     public func startTask(task: Task): Result<Unit> {
+        startCallCount += 1
         if (failStart) {
-            return fail<Unit>("fake startTask failed")
+            return taskFail<Unit>("fake startTask failed")
         }
-        rows[task.id] = RemoteTaskStatus(
+        tasks[task.id] = RemoteTaskStatus(
             task.id,
-            TaskStatus.Running,
+            TaskStatus.running,
             true,
             None,
             task.repoPath,
@@ -590,14 +640,18 @@ public class FakeRemoteTaskGateway <: RemoteTaskGateway {
             task.branchName,
             task.tmuxSession
         )
-        return ok<Unit>(())
+        logs[task.id] = "running ${task.id}"
+        return taskOk<Unit>(())
     }
 
     public func listTasks(server: ServerConfig): Result<ArrayList<RemoteTaskRow>> {
         let _ = server
-        let list = ArrayList<RemoteTaskRow>()
-        for ((_, status) in rows) {
-            list.append(RemoteTaskRow(
+        if (failList) {
+            return taskFail<ArrayList<RemoteTaskRow>>("fake listTasks failed")
+        }
+        let rows = ArrayList<RemoteTaskRow>()
+        for ((_, status) in tasks) {
+            rows.append(RemoteTaskRow(
                 status.taskId,
                 status.status,
                 status.live,
@@ -607,70 +661,81 @@ public class FakeRemoteTaskGateway <: RemoteTaskGateway {
                 status.worktree
             ))
         }
-        return ok<ArrayList<RemoteTaskRow>>(list)
+        return taskOk<ArrayList<RemoteTaskRow>>(rows)
     }
 
     public func getTaskStatus(taskId: String): Result<RemoteTaskStatus> {
-        if (let Some(status) <- rows.get(taskId)) {
-            return ok<RemoteTaskStatus>(status)
+        if (failStatus) {
+            return taskFail<RemoteTaskStatus>("fake getTaskStatus failed")
         }
-        return fail<RemoteTaskStatus>("fake task not found: ${taskId}")
+        match (tasks.get(taskId)) {
+            case Some(status) => return taskOk<RemoteTaskStatus>(status)
+            case None => return taskFail<RemoteTaskStatus>("fake task not found: ${taskId}")
+        }
     }
 
     public func tailLog(taskId: String, lines: Int64): Result<String> {
         let _ = lines
-        return ok<String>("fake log for ${taskId}")
+        return taskOk<String>(logs.get(taskId) ?? "")
     }
 
     public func tailStderr(taskId: String): Result<String> {
-        let _ = taskId
-        return ok<String>("")
+        return taskOk<String>(stderrs.get(taskId) ?? "")
     }
 
     public func stopTask(taskId: String): Result<Unit> {
-        if (let Some(status) <- rows.get(taskId)) {
-            rows[taskId] = RemoteTaskStatus(
-                status.taskId,
-                TaskStatus.Stopped,
-                false,
-                status.exitCode,
-                status.repo,
-                status.worktree,
-                status.branch,
-                status.tmux
-            )
+        stopCallCount += 1
+        if (failStop) {
+            return taskFail<Unit>("fake stopTask failed")
         }
-        return ok<Unit>(())
+        match (tasks.get(taskId)) {
+            case Some(status) =>
+                tasks[taskId] = cloneRemoteStatus(status, TaskStatus.stopped, false, status.exitCode)
+            case None => ()
+        }
+        return taskOk<Unit>(())
     }
 
     public func softDeleteTask(taskId: String): Result<Unit> {
-        if (let Some(status) <- rows.get(taskId)) {
-            rows[taskId] = RemoteTaskStatus(
-                status.taskId,
-                TaskStatus.Deleted,
-                false,
-                status.exitCode,
-                status.repo,
-                status.worktree,
-                status.branch,
-                status.tmux
-            )
+        softDeleteCallCount += 1
+        if (failSoftDelete) {
+            return taskFail<Unit>("fake softDeleteTask failed")
         }
-        return ok<Unit>(())
+        match (tasks.get(taskId)) {
+            case Some(status) =>
+                tasks[taskId] = cloneRemoteStatus(status, TaskStatus.deleted, false, status.exitCode)
+            case None => ()
+        }
+        return taskOk<Unit>(())
     }
 
     public func gitSummary(taskId: String): Result<String> {
         let _ = taskId
-        return ok<String>("--- STATUS ---\n M fake.cj\n\n--- DIFF STAT ---\nfake.cj | 1 +\n\n--- RECENT COMMITS ---\nabc123 fake")
+        if (failGitSummary) {
+            return taskFail<String>("fake gitSummary failed")
+        }
+        return taskOk<String>(gitText)
     }
 
     public func setRemoteStatus(status: RemoteTaskStatus): Unit {
-        rows[status.taskId] = status
+        tasks[status.taskId] = status
+    }
+
+    public func setLog(taskId: String, text: String): Unit {
+        logs[taskId] = text
+    }
+
+    public func setStderr(taskId: String, text: String): Unit {
+        stderrs[taskId] = text
+    }
+
+    public func setGitSummary(text: String): Unit {
+        gitText = text
     }
 }
 
 public func wrapPrompt(prompt: String, mode: RunMode): String {
-    var sb = StringBuilder()
+    let sb = StringBuilder()
     sb.append("你正在一个独立 git worktree 中工作。\n\n")
     sb.append("任务：\n")
     sb.append(prompt)
@@ -683,16 +748,30 @@ public func wrapPrompt(prompt: String, mode: RunMode): String {
     sb.append("6. 完成后创建一个 git commit，commit message 要清晰。\n")
     sb.append("7. 不要修改与任务无关的文件。\n")
     sb.append("8. 完成后退出。\n")
-    if (isPlan(mode)) {
+    if (isPlanMode(mode)) {
         sb.append("\n本次任务只做计划，不直接修改代码。请输出实施步骤、风险点、建议拆分方式。\n")
     }
     return sb.toString()
 }
 
 public func generateTaskId(): String {
-    let timestamp = formatTaskTimestamp(DateTime.now())
-    let random = leftPad(Random().nextInt64(1000000).toString(), 6, "0")
-    return "ccm-${timestamp}-${random}"
+    let timestamp = formatTaskIdTimestamp(DateTime.now())
+    let suffix = leftPad(Random().nextInt64(1000000).toString(), 6, "0")
+    return "ccm-${timestamp}-${suffix}"
+}
+
+public func isValidTaskId(taskId: String): Bool {
+    if (taskId.size == 0) {
+        return false
+    }
+    for (b in taskId.toArray()) {
+        let ok = (b >= b'a' && b <= b'z') || (b >= b'A' && b <= b'Z') || (b >= b'0' && b <= b'9') ||
+            b == b'_' || b == b'-'
+        if (!ok) {
+            return false
+        }
+    }
+    return true
 }
 
 public func deriveBranchName(taskId: String): String {
@@ -711,19 +790,35 @@ public func deriveWorktreePath(taskId: String): String {
     return "$HOME/.cc-mobile/worktrees/${taskId}"
 }
 
-public func isValidTaskId(taskId: String): Bool {
-    if (taskId.size == 0) {
-        return false
+public func taskStatusToWire(status: TaskStatus): String {
+    match (status) {
+        case TaskStatus.local_created => "local_created"
+        case TaskStatus.remote_created => "remote_created"
+        case TaskStatus.worktree_created => "worktree_created"
+        case TaskStatus.running => "running"
+        case TaskStatus.completed => "completed"
+        case TaskStatus.failed => "failed"
+        case TaskStatus.stopped => "stopped"
+        case TaskStatus.unknown => "unknown"
+        case TaskStatus.deleted => "deleted"
     }
-    for (r in taskId.runes()) {
-        if (!((r >= r'a' && r <= r'z') || (r >= r'A' && r <= r'Z') || (r >= r'0' && r <= r'9') || r == r'_' || r == r'-')) {
-            return false
-        }
-    }
-    return true
 }
 
-private func validateSubmit(repoPath: String, title: String, prompt: String): String {
+public func taskStatusFromWire(value: String): TaskStatus {
+    match (value) {
+        case "local_created" => TaskStatus.local_created
+        case "remote_created" => TaskStatus.remote_created
+        case "worktree_created" => TaskStatus.worktree_created
+        case "running" => TaskStatus.running
+        case "completed" => TaskStatus.completed
+        case "failed" => TaskStatus.failed
+        case "stopped" => TaskStatus.stopped
+        case "deleted" => TaskStatus.deleted
+        case _ => TaskStatus.unknown
+    }
+}
+
+private func validateTaskInput(repoPath: String, title: String, prompt: String): String {
     if (repoPath.trimAscii().size == 0) {
         return "repoPath cannot be empty"
     }
@@ -736,22 +831,8 @@ private func validateSubmit(repoPath: String, title: String, prompt: String): St
     return ""
 }
 
-private func nowSeconds(): Int64 {
+private func taskCoreNowSeconds(): Int64 {
     return DateTime.now().toUnixTimeStamp().toSeconds()
-}
-
-//private func ensureDir(path: Path): Unit {
-//    if (!File.exists(path)) {
-//        Directory.create(path, recursive: true)
-//    }
-//}
-
-private func ensureDir(path: Path): Unit {
-    try {
-        Directory.create(path, recursive: true)
-    } catch (e: FSException) {
-        // 目录已存在则忽略
-    }
 }
 
 private func leftPad(value: String, width: Int64, pad: String): String {
@@ -762,111 +843,7 @@ private func leftPad(value: String, width: Int64, pad: String): String {
     return out
 }
 
-private func isPlan(mode: RunMode): Bool {
-    match (mode) {
-        case RunMode.plan => true
-        case RunMode.run => false
-    }
-}
-
-private func isDeleted(status: TaskStatus): Bool {
-    match (status) {
-        case TaskStatus.Deleted => true
-        case _ => false
-    }
-}
-
-private func inferStatus(status: TaskStatus, exitCode: ?Int64): TaskStatus {
-    match (status) {
-        case TaskStatus.Unknown =>
-            match (exitCode) {
-                case Some(code) => if (code == 0) { TaskStatus.Completed } else { TaskStatus.Failed }
-                case None => TaskStatus.Unknown
-            }
-        case _ => status
-    }
-}
-
-private func findIn(tasks: ArrayList<Task>, taskId: String): ?Task {
-    for (task in tasks) {
-        if (task.id == taskId) {
-            return Some(task)
-        }
-    }
-    return None
-}
-
-private func visibleTasksForServer(tasks: ArrayList<Task>, serverId: String): ArrayList<Task> {
-    let visible = ArrayList<Task>()
-    for (task in tasks) {
-        if (task.serverId == serverId && !isDeleted(task.status)) {
-            visible.append(task)
-        }
-    }
-    return visible
-}
-
-private func resultError<T>(result: Result<T>): ?String {
-    return result.error
-}
-
-private func resultErrorText<T>(result: Result<T>): String {
-    match (result.error) {
-        case Some(e) => e
-        case None => "unknown error"
-    }
-}
-
-private func resultValueOr(result: Result<String>, fallback: String): String {
-    match (result.value) {
-        case Some(v) => v
-        case None => fallback
-    }
-}
-
-private func taskStatusToString(status: TaskStatus): String {
-    match (status) {
-        case TaskStatus.LocalCreated => "local_created"
-        case TaskStatus.RemoteCreated => "remote_created"
-        case TaskStatus.WorktreeCreated => "worktree_created"
-        case TaskStatus.Running => "running"
-        case TaskStatus.Completed => "completed"
-        case TaskStatus.Failed => "failed"
-        case TaskStatus.Stopped => "stopped"
-        case TaskStatus.Unknown => "unknown"
-        case TaskStatus.Deleted => "deleted"
-    }
-}
-
-private func taskStatusFromString(value: String): TaskStatus {
-    match (value) {
-        case "local_created" => TaskStatus.LocalCreated
-        case "remote_created" => TaskStatus.RemoteCreated
-        case "worktree_created" => TaskStatus.WorktreeCreated
-        case "running" => TaskStatus.Running
-        case "completed" => TaskStatus.Completed
-        case "failed" => TaskStatus.Failed
-        case "stopped" => TaskStatus.Stopped
-        case "deleted" => TaskStatus.Deleted
-        case _ => TaskStatus.Unknown
-    }
-}
-
-private func runModeToString(mode: RunMode): String {
-    match (mode) {
-        case RunMode.plan => "plan"
-        case RunMode.run => "run"
-    }
-}
-
-private func runModeFromString(value: String): RunMode {
-    match (value) {
-        case "plan" => RunMode.plan
-        case _ => RunMode.run
-    }
-}
-
-private func formatTaskTimestamp(value: DateTime): String {
+private func formatTaskIdTimestamp(value: DateTime): String {
     return "${leftPad(value.year.toString(), 4, "0")}${monthToDigits(value.month)}${leftPad(value.dayOfMonth.toString(), 2, "0")}-${leftPad(value.hour.toString(), 2, "0")}${leftPad(value.minute.toString(), 2, "0")}${leftPad(value.second.toString(), 2, "0")}"
 }
 
@@ -887,298 +864,364 @@ private func monthToDigits(value: Month): String {
     }
 }
 
-private class TaskJson {
-    public static func encodeTasks(tasks: ArrayList<Task>): String {
-        let sb = StringBuilder()
-        sb.append("[\n")
-        for (i in 0..tasks.size) {
-            let task = tasks[i]
-            sb.append("  {")
-            appendField(sb, "id", task.id, false)
-            appendField(sb, "title", task.title, true)
-            appendField(sb, "prompt", task.prompt, true)
-            appendField(sb, "serverId", task.serverId, true)
-            appendField(sb, "repoPath", task.repoPath, true)
-            appendField(sb, "branchName", task.branchName, true)
-            appendField(sb, "worktreePath", task.worktreePath, true)
-            appendField(sb, "tmuxSession", task.tmuxSession, true)
-            appendField(sb, "remoteTaskDir", task.remoteTaskDir, true)
-            appendField(sb, "status", taskStatusToString(task.status), true)
-            appendField(sb, "mode", runModeToString(task.mode), true)
-            appendNumberField(sb, "createdAt", task.createdAt, true)
-            appendNumberField(sb, "updatedAt", task.updatedAt, true)
-            appendNumberField(sb, "lastLogOffset", task.lastLogOffset, true)
-            appendNullableField(sb, "lastError", task.lastError, true)
-            sb.append("}")
-            if (i < tasks.size - 1) {
-                sb.append(",")
-            }
-            sb.append("\n")
-        }
-        sb.append("]\n")
-        return sb.toString()
-    }
-
-    public static func decodeTasks(text: String): ArrayList<Task> {
-        let tasks = ArrayList<Task>()
-        for (obj in splitObjects(text)) {
-            let now = nowSeconds()
-            let task = Task(
-                jsonString(obj, "id", ""),
-                jsonString(obj, "title", ""),
-                jsonString(obj, "prompt", ""),
-                jsonString(obj, "serverId", ""),
-                jsonString(obj, "repoPath", ""),
-                jsonString(obj, "branchName", ""),
-                jsonString(obj, "worktreePath", ""),
-                jsonString(obj, "tmuxSession", ""),
-                jsonString(obj, "remoteTaskDir", ""),
-                taskStatusFromString(jsonString(obj, "status", "unknown")),
-                runModeFromString(jsonString(obj, "mode", "run")),
-                jsonInt(obj, "createdAt", now),
-                jsonInt(obj, "updatedAt", now),
-                jsonInt(obj, "lastLogOffset", 0),
-                jsonNullableString(obj, "lastError")
-            )
-            if (task.id.size > 0) {
-                tasks.append(task)
-            }
-        }
-        return tasks
-    }
-
-    public static func encodeServers(servers: ArrayList<ServerConfig>): String {
-        let sb = StringBuilder()
-        sb.append("[\n")
-        for (i in 0..servers.size) {
-            let server = servers[i]
-            sb.append("  {")
-            appendField(sb, "id", server.id, false)
-            appendField(sb, "name", server.name, true)
-            appendField(sb, "host", server.host, true)
-            appendNumberField(sb, "port", server.port, true)
-            appendField(sb, "username", server.username, true)
-            appendField(sb, "passwordRef", server.passwordRef, true)
-            appendField(sb, "defaultRepoPath", server.defaultRepoPath, true)
-            appendNumberField(sb, "createdAt", server.createdAt, true)
-            appendNumberField(sb, "updatedAt", server.updatedAt, true)
-            sb.append("}")
-            if (i < servers.size - 1) {
-                sb.append(",")
-            }
-            sb.append("\n")
-        }
-        sb.append("]\n")
-        return sb.toString()
-    }
-
-    public static func decodeServers(text: String): ArrayList<ServerConfig> {
-        let servers = ArrayList<ServerConfig>()
-        for (obj in splitObjects(text)) {
-            let now = nowSeconds()
-            let server = ServerConfig(
-                jsonString(obj, "id", ""),
-                jsonString(obj, "name", ""),
-                jsonString(obj, "host", ""),
-                jsonInt(obj, "port", 22),
-                jsonString(obj, "username", ""),
-                jsonString(obj, "passwordRef", ""),
-                jsonString(obj, "defaultRepoPath", ""),
-                jsonInt(obj, "createdAt", now),
-                jsonInt(obj, "updatedAt", now)
-            )
-            if (server.id.size > 0) {
-                servers.append(server)
-            }
-        }
-        return servers
+private func isPlanMode(mode: RunMode): Bool {
+    match (mode) {
+        case RunMode.plan => true
+        case RunMode.run => false
     }
 }
 
-private func appendField(sb: StringBuilder, key: String, value: String, comma: Bool): Unit {
-    if (comma) {
-        sb.append(",")
+private func ensureDirectory(path: Path): Unit {
+    try {
+        Directory.create(path, recursive: true)
+    } catch (e: Exception) {
+        ()
     }
-    sb.append("\"")
-    sb.append(key)
-    sb.append("\":\"")
-    sb.append(jsonEscape(value))
-    sb.append("\"")
 }
 
-private func appendNullableField(sb: StringBuilder, key: String, value: ?String, comma: Bool): Unit {
-    if (comma) {
-        sb.append(",")
+private func taskCoreStoragePath(storageDir: String): Path {
+    let path = Path(storageDir)
+    if (path.isAbsolute()) {
+        return path
     }
-    sb.append("\"")
-    sb.append(key)
-    sb.append("\":")
+    return Path("/data/storage/el2/base/files").join(storageDir)
+}
+
+private func runModeToWire(mode: RunMode): String {
+    match (mode) {
+        case RunMode.plan => "plan"
+        case RunMode.run => "run"
+    }
+}
+
+private func runModeFromWire(value: String): RunMode {
     match (value) {
-        case Some(v) =>
-            sb.append("\"")
-            sb.append(jsonEscape(v))
-            sb.append("\"")
-        case None => sb.append("null")
+        case "plan" => RunMode.plan
+        case _ => RunMode.run
     }
 }
 
-private func appendNumberField(sb: StringBuilder, key: String, value: Int64, comma: Bool): Unit {
-    if (comma) {
-        sb.append(",")
+private func isDeleted(status: TaskStatus): Bool {
+    match (status) {
+        case TaskStatus.deleted => true
+        case _ => false
     }
-    sb.append("\"")
-    sb.append(key)
-    sb.append("\":")
-    sb.append(value)
 }
 
-private func jsonEscape(value: String): String {
-    var out = value.replace("\\", "\\\\")
-    out = out.replace("\"", "\\\"")
-    out = out.replace("\n", "\\n")
-    out = out.replace("\r", "\\r")
-    out = out.replace("\t", "\\t")
-    return out
+private func isTerminal(status: TaskStatus): Bool {
+    match (status) {
+        case TaskStatus.completed => true
+        case TaskStatus.failed => true
+        case TaskStatus.stopped => true
+        case TaskStatus.deleted => true
+        case _ => false
+    }
 }
 
-private func jsonUnescape(value: String): String {
-    var sb = StringBuilder()
-    var escaping = false
-    for (r in value.runes()) {
-        if (escaping) {
-            match (r) {
-                case r'n' => sb.append("\n")
-                case r'r' => sb.append("\r")
-                case r't' => sb.append("\t")
-                case r'"' => sb.append("\"")
-                case r'\\' => sb.append("\\")
-                case _ => sb.append(r)
+private func normalizedRemoteStatus(status: TaskStatus, live: Bool, exitCode: Option<Int64>): TaskStatus {
+    match (status) {
+        case TaskStatus.unknown =>
+            match (exitCode) {
+                case Some(code) => return if (code == 0) { TaskStatus.completed } else { TaskStatus.failed }
+                case None => return if (live) { TaskStatus.running } else { TaskStatus.unknown }
             }
-            escaping = false
-        } else if (r == r'\\') {
-            escaping = true
-        } else {
-            sb.append(r)
-        }
-    }
-    return sb.toString()
-}
-
-private func splitObjects(text: String): ArrayList<String> {
-    let objects = ArrayList<String>()
-    var depth = 0
-    var inString = false
-    var escaping = false
-    var sb = StringBuilder()
-    for (r in text.runes()) {
-        if (depth > 0) {
-            sb.append(r)
-        }
-        if (inString) {
-            if (escaping) {
-                escaping = false
-            } else if (r == r'\\') {
-                escaping = true
-            } else if (r == r'"') {
-                inString = false
+        case _ =>
+            if (live && !isTerminal(status)) {
+                return TaskStatus.running
             }
-        } else {
-            if (r == r'"') {
-                inString = true
-            } else if (r == r'{') {
-                depth += 1
-            } else if (r == r'}') {
-                depth -= 1
-                if (depth == 0) {
-                    objects.append(sb.toString())
-                    sb = StringBuilder()
-                }
-            }
-        }
-    }
-    return objects
-}
-
-private func jsonString(obj: String, key: String, fallback: String): String {
-    match (readJsonString(obj, key)) {
-        case Some(v) => v
-        case None => fallback
+            return status
     }
 }
 
-private func jsonNullableString(obj: String, key: String): ?String {
-    return readJsonString(obj, key)
+private func applyRemoteRow(task: Task, row: RemoteTaskRow): Unit {
+    task.status = normalizedRemoteStatus(row.status, row.live, row.exitCode)
+    task.repoPath = row.repo
+    task.branchName = row.branch
+    task.worktreePath = row.worktree
+    task.tmuxSession = deriveTmuxSession(row.taskId)
+    task.remoteTaskDir = deriveRemoteTaskDir(row.taskId)
+    task.updatedAt = taskCoreNowSeconds()
 }
 
-private func jsonInt(obj: String, key: String, fallback: Int64): Int64 {
-    let marker = "\"${key}\":"
-    if (let Some(start) <- obj.indexOf(marker)) {
-        let raw = readRawToken(obj, start + marker.size)
-        match (Int64.tryParse(raw.trimAscii())) {
-            case Some(v) => return v
-            case None => return fallback
-        }
-    }
-    return fallback
+private func applyRemoteStatus(task: Task, status: RemoteTaskStatus): Unit {
+    task.status = normalizedRemoteStatus(status.status, status.live, status.exitCode)
+    task.repoPath = status.repo
+    task.worktreePath = status.worktree
+    task.branchName = status.branch
+    task.tmuxSession = status.tmux
+    task.remoteTaskDir = deriveRemoteTaskDir(status.taskId)
+    task.updatedAt = taskCoreNowSeconds()
 }
 
-private func readJsonString(obj: String, key: String): ?String {
-    let marker = "\"${key}\":"
-    if (let Some(start) <- obj.indexOf(marker)) {
-        let runes = obj.toRuneArray()
-        var i = byteIndexToRuneIndex(obj, start + marker.size)
-        while (i < runes.size && (runes[i] == r' ' || runes[i] == r'\n' || runes[i] == r'\r' || runes[i] == r'\t')) {
-            i += 1
-        }
-        if (i >= runes.size || runes[i] != r'"') {
-            return None
-        }
-        i += 1
-        let sb = StringBuilder()
-        var escaping = false
-        while (i < runes.size) {
-            let r = runes[i]
-            if (escaping) {
-                sb.append(r'\\')
-                sb.append(r)
-                escaping = false
-            } else if (r == r'\\') {
-                escaping = true
-            } else if (r == r'"') {
-                return Some(jsonUnescape(sb.toString()))
-            } else {
-                sb.append(r)
-            }
-            i += 1
+private func taskFromRemoteRow(row: RemoteTaskRow, serverId: String): Task {
+    let now = taskCoreNowSeconds()
+    return Task(
+        row.taskId,
+        row.taskId,
+        "",
+        serverId,
+        row.repo,
+        row.branch,
+        row.worktree,
+        deriveTmuxSession(row.taskId),
+        deriveRemoteTaskDir(row.taskId),
+        normalizedRemoteStatus(row.status, row.live, row.exitCode),
+        RunMode.run,
+        now,
+        now,
+        0,
+        None
+    )
+}
+
+private func findTaskInMemory(tasks: ArrayList<Task>, taskId: String): Option<Task> {
+    for (task in tasks) {
+        if (task.id == taskId) {
+            return Some(task)
         }
     }
     return None
 }
 
-private func readRawToken(obj: String, byteStart: Int64): String {
-    let runes = obj.toRuneArray()
-    var i = byteIndexToRuneIndex(obj, byteStart)
-    let sb = StringBuilder()
-    while (i < runes.size) {
-        let r = runes[i]
-        if (r == r',' || r == r'}' || r == r'\n' || r == r'\r') {
-            break
+private func visibleTasks(tasks: ArrayList<Task>, serverId: String): ArrayList<Task> {
+    let out = ArrayList<Task>()
+    for (task in tasks) {
+        if (task.serverId == serverId && !isDeleted(task.status)) {
+            out.append(task)
         }
-        sb.append(r)
-        i += 1
     }
-    return sb.toString()
+    return out
 }
 
-private func byteIndexToRuneIndex(value: String, byteIndex: Int64): Int64 {
-    var bytes = 0
-    var idx = 0
-    for (r in value.runes()) {
-        if (bytes >= byteIndex) {
-            return idx
-        }
-        bytes += String([r]).size
-        idx += 1
+private func resultMessage<T>(result: Result<T>): Option<String> {
+    return result.error
+}
+
+private func resultMessageText<T>(result: Result<T>): String {
+    return result.error ?? "unknown error"
+}
+
+private func resultStringOrEmpty(result: Result<String>): String {
+    return result.value ?? ""
+}
+
+private func cloneRemoteStatus(
+    source: RemoteTaskStatus,
+    status: TaskStatus,
+    live: Bool,
+    exitCode: Option<Int64>
+): RemoteTaskStatus {
+    return RemoteTaskStatus(
+        source.taskId,
+        status,
+        live,
+        exitCode,
+        source.repo,
+        source.worktree,
+        source.branch,
+        source.tmux
+    )
+}
+
+private func cloneTask(task: Task): Task {
+    return Task(
+        task.id,
+        task.title,
+        task.prompt,
+        task.serverId,
+        task.repoPath,
+        task.branchName,
+        task.worktreePath,
+        task.tmuxSession,
+        task.remoteTaskDir,
+        task.status,
+        task.mode,
+        task.createdAt,
+        task.updatedAt,
+        task.lastLogOffset,
+        task.lastError
+    )
+}
+
+private func cloneTasks(tasks: ArrayList<Task>): ArrayList<Task> {
+    let out = ArrayList<Task>()
+    for (task in tasks) {
+        out.append(cloneTask(task))
     }
-    return idx
+    return out
+}
+
+private func cloneServer(server: ServerConfig): ServerConfig {
+    return ServerConfig(
+        server.id,
+        server.name,
+        server.host,
+        server.port,
+        server.username,
+        server.passwordRef,
+        server.defaultRepoPath,
+        server.createdAt,
+        server.updatedAt
+    )
+}
+
+private func cloneServers(servers: ArrayList<ServerConfig>): ArrayList<ServerConfig> {
+    let out = ArrayList<ServerConfig>()
+    for (server in servers) {
+        out.append(cloneServer(server))
+    }
+    return out
+}
+
+private class TaskCoreJson {
+    public static func encodeTasks(tasks: ArrayList<Task>): String {
+        let array = JsonArray()
+        for (task in tasks) {
+            array.add(encodeTask(task))
+        }
+        return array.toJsonString()
+    }
+
+    public static func decodeTasks(text: String): ArrayList<Task> {
+        let tasks = ArrayList<Task>()
+        try {
+            let array = JsonValue.fromStr(text).asArray()
+            for (i in 0..array.size()) {
+                try {
+                    let task = decodeTask(array[i].asObject())
+                    if (task.id.size > 0) {
+                        tasks.append(task)
+                    }
+                } catch (e: Exception) {
+                    ()
+                }
+            }
+        } catch (e: Exception) {
+            ()
+        }
+        return tasks
+    }
+
+    public static func encodeServers(servers: ArrayList<ServerConfig>): String {
+        let array = JsonArray()
+        for (server in servers) {
+            array.add(encodeServer(server))
+        }
+        return array.toJsonString()
+    }
+
+    public static func decodeServers(text: String): ArrayList<ServerConfig> {
+        let servers = ArrayList<ServerConfig>()
+        try {
+            let array = JsonValue.fromStr(text).asArray()
+            for (i in 0..array.size()) {
+                try {
+                    let server = decodeServer(array[i].asObject())
+                    if (server.id.size > 0) {
+                        servers.append(server)
+                    }
+                } catch (e: Exception) {
+                    ()
+                }
+            }
+        } catch (e: Exception) {
+            ()
+        }
+        return servers
+    }
+
+    private static func encodeTask(task: Task): JsonObject {
+        let obj = JsonObject()
+        obj.put("id", JsonString(task.id))
+        obj.put("title", JsonString(task.title))
+        obj.put("prompt", JsonString(task.prompt))
+        obj.put("serverId", JsonString(task.serverId))
+        obj.put("repoPath", JsonString(task.repoPath))
+        obj.put("branchName", JsonString(task.branchName))
+        obj.put("worktreePath", JsonString(task.worktreePath))
+        obj.put("tmuxSession", JsonString(task.tmuxSession))
+        obj.put("remoteTaskDir", JsonString(task.remoteTaskDir))
+        obj.put("status", JsonString(taskStatusToWire(task.status)))
+        obj.put("mode", JsonString(runModeToWire(task.mode)))
+        obj.put("createdAt", JsonInt(task.createdAt))
+        obj.put("updatedAt", JsonInt(task.updatedAt))
+        obj.put("lastLogOffset", JsonInt(task.lastLogOffset))
+        obj.put("lastError", JsonString(task.lastError ?? ""))
+        return obj
+    }
+
+    private static func decodeTask(obj: JsonObject): Task {
+        let now = taskCoreNowSeconds()
+        let lastError = stringField(obj, "lastError", "")
+        return Task(
+            stringField(obj, "id", ""),
+            stringField(obj, "title", ""),
+            stringField(obj, "prompt", ""),
+            stringField(obj, "serverId", ""),
+            stringField(obj, "repoPath", ""),
+            stringField(obj, "branchName", ""),
+            stringField(obj, "worktreePath", ""),
+            stringField(obj, "tmuxSession", ""),
+            stringField(obj, "remoteTaskDir", ""),
+            taskStatusFromWire(stringField(obj, "status", "unknown")),
+            runModeFromWire(stringField(obj, "mode", "run")),
+            intField(obj, "createdAt", now),
+            intField(obj, "updatedAt", now),
+            intField(obj, "lastLogOffset", 0),
+            if (lastError.size > 0) { Some(lastError) } else { None }
+        )
+    }
+
+    private static func encodeServer(server: ServerConfig): JsonObject {
+        let obj = JsonObject()
+        obj.put("id", JsonString(server.id))
+        obj.put("name", JsonString(server.name))
+        obj.put("host", JsonString(server.host))
+        obj.put("port", JsonInt(server.port))
+        obj.put("username", JsonString(server.username))
+        obj.put("passwordRef", JsonString(server.passwordRef))
+        obj.put("defaultRepoPath", JsonString(server.defaultRepoPath))
+        obj.put("createdAt", JsonInt(server.createdAt))
+        obj.put("updatedAt", JsonInt(server.updatedAt))
+        return obj
+    }
+
+    private static func decodeServer(obj: JsonObject): ServerConfig {
+        let now = taskCoreNowSeconds()
+        return ServerConfig(
+            stringField(obj, "id", ""),
+            stringField(obj, "name", ""),
+            stringField(obj, "host", ""),
+            intField(obj, "port", 22),
+            stringField(obj, "username", ""),
+            stringField(obj, "passwordRef", ""),
+            stringField(obj, "defaultRepoPath", ""),
+            intField(obj, "createdAt", now),
+            intField(obj, "updatedAt", now)
+        )
+    }
+
+    private static func stringField(obj: JsonObject, key: String, fallback: String): String {
+        match (obj.get(key)) {
+            case Some(value) =>
+                try {
+                    return value.asString().getValue()
+                } catch (e: Exception) {
+                    return fallback
+                }
+            case None => return fallback
+        }
+    }
+
+    private static func intField(obj: JsonObject, key: String, fallback: Int64): Int64 {
+        match (obj.get(key)) {
+            case Some(value) =>
+                try {
+                    return value.asInt().getValue()
+                } catch (e: Exception) {
+                    return fallback
+                }
+            case None => return fallback
+        }
+    }
 }
