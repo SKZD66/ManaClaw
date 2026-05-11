@@ -6,7 +6,7 @@ package ohos_app_cangjie_entry
  * - run: 默认模式，使用 danger run 参数执行 Claude Code。
  * - plan: 规划模式，只做计划，不直接执行危险写操作。
  */
-enum RunMode {
+public enum RunMode {
     | plan
     | run
 }

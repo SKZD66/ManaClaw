@@ -1,0 +1,19 @@
+[
+  {
+    "id": "ccm-20260506-143522-482913",
+    "title": "Example TaskCore task",
+    "prompt": "Add a focused feature and run related tests.",
+    "serverId": "default",
+    "repoPath": "/home/dev/project",
+    "branchName": "agent/ccm-20260506-143522-482913",
+    "worktreePath": "$HOME/.cc-mobile/worktrees/ccm-20260506-143522-482913",
+    "tmuxSession": "cc-ccm-20260506-143522-482913",
+    "remoteTaskDir": "$HOME/.cc-mobile/tasks/ccm-20260506-143522-482913",
+    "status": "running",
+    "mode": "run",
+    "createdAt": 1778112000,
+    "updatedAt": 1778112060,
+    "lastLogOffset": 0,
+    "lastError": null
+  }
+]
