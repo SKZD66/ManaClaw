@@ -210,15 +210,13 @@ export class FakeTaskViewModel implements TaskViewModel {
     return new UiResult<boolean>(true, '任务已停止', '', true)
   }
 
-  softDeleteTask(taskId: string): UiResult<boolean> {
+  deleteTask(taskId: string): UiResult<boolean> {
     let i = this.idx(taskId)
     if (i < 0) {
       return new UiResult<boolean>(false, '删除失败：任务不存在', 'task not found')
     }
-    this.tasks[i].status = 'deleted'
-    this.tasks[i].live = false
-    this.tasks[i].updatedAt = this.now()
-    return new UiResult<boolean>(true, '任务已软删除', '', true)
+    this.tasks.splice(i, 1)
+    return new UiResult<boolean>(true, '任务已删除', '', true)
   }
 
   loadGitSummary(taskId: string): UiResult<string> {

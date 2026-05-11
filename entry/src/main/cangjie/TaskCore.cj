@@ -217,7 +217,7 @@ public interface RemoteTaskGateway {
     func tailLog(taskId: String, lines: Int64): Result<String>
     func tailStderr(taskId: String): Result<String>
     func stopTask(taskId: String): Result<Unit>
-    func softDeleteTask(taskId: String): Result<Unit>
+    func deleteTask(taskId: String): Result<Unit>
     func gitSummary(taskId: String): Result<String>
 }
 
@@ -304,13 +304,20 @@ public class TaskStore {
         return None
     }
 
-    public func markDeleted(taskId: String): Unit {
-        match (findTask(taskId)) {
-            case Some(task) =>
-                task.status = TaskStatus.deleted
-                task.updatedAt = taskCoreNowSeconds()
-                upsertTask(task)
-            case None => ()
+    public func removeTask(taskId: String): Unit {
+        let tasks = loadTasks()
+        var removed = false
+        var index: Int64 = 0
+        while (index < tasks.size) {
+            if (tasks[index].id == taskId) {
+                tasks.remove(at: index)
+                removed = true
+                break
+            }
+            index += 1
+        }
+        if (removed) {
+            saveTasks(tasks)
         }
     }
 }
@@ -547,22 +554,19 @@ public class TaskService {
         return taskOk<Unit>(())
     }
 
-    public func softDeleteTask(taskId: String): Result<Unit> {
+    public func deleteTask(taskId: String): Result<Unit> {
         let task = match (taskStore.findTask(taskId)) {
             case Some(value) => value
             case None => return taskFail<Unit>("Task not found: ${taskId}")
         }
-        let deleted = gateway.softDeleteTask(taskId)
+        let deleted = gateway.deleteTask(taskId)
         if (!deleted.isOk) {
             task.lastError = resultMessage(deleted)
             task.updatedAt = taskCoreNowSeconds()
             taskStore.upsertTask(task)
             return taskFail<Unit>(resultMessageText(deleted))
         }
-        task.status = TaskStatus.deleted
-        task.lastError = None
-        task.updatedAt = taskCoreNowSeconds()
-        taskStore.upsertTask(task)
+        taskStore.removeTask(taskId)
         return taskOk<Unit>(())
     }
 
@@ -581,12 +585,12 @@ public class FakeRemoteTaskGateway <: RemoteTaskGateway {
     public var failList: Bool = false
     public var failStatus: Bool = false
     public var failStop: Bool = false
-    public var failSoftDelete: Bool = false
+    public var failDelete: Bool = false
     public var failGitSummary: Bool = false
     public var createCallCount: Int64 = 0
     public var startCallCount: Int64 = 0
     public var stopCallCount: Int64 = 0
-    public var softDeleteCallCount: Int64 = 0
+    public var deleteCallCount: Int64 = 0
     public let wrappedPrompts = HashMap<String, String>()
 
     private let tasks = HashMap<String, RemoteTaskStatus>()
@@ -696,16 +700,14 @@ public class FakeRemoteTaskGateway <: RemoteTaskGateway {
         return taskOk<Unit>(())
     }
 
-    public func softDeleteTask(taskId: String): Result<Unit> {
-        softDeleteCallCount += 1
-        if (failSoftDelete) {
-            return taskFail<Unit>("fake softDeleteTask failed")
+    public func deleteTask(taskId: String): Result<Unit> {
+        deleteCallCount += 1
+        if (failDelete) {
+            return taskFail<Unit>("fake deleteTask failed")
         }
-        match (tasks.get(taskId)) {
-            case Some(status) =>
-                tasks[taskId] = cloneRemoteStatus(status, TaskStatus.deleted, false, status.exitCode)
-            case None => ()
-        }
+        tasks.remove(taskId)
+        logs.remove(taskId)
+        stderrs.remove(taskId)
         return taskOk<Unit>(())
     }
 

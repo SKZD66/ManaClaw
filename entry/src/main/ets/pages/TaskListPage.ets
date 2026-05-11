@@ -66,7 +66,7 @@ export struct TaskListPage {
         Blank().width('2%')
         Button('停止').height(32).width('32%').onClick(() => this.onStop(t.taskId))
         Blank().width('2%')
-        Button('软删除').height(32).width('32%').onClick(() => this.onDelete(t.taskId))
+        Button('删除').height(32).width('32%').onClick(() => this.onDelete(t.taskId))
       }.width('100%')
     }
     .padding(12)

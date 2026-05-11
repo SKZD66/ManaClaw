@@ -200,8 +200,8 @@ struct Index {
 
   private confirmDelete(taskId: string): void {
     AlertDialog.show({
-      title: '软删除任务',
-      message: '确认软删除任务 ' + taskId + ' ?',
+      title: '删除任务',
+      message: '确认删除任务 ' + taskId + ' ? 将停止任务并删除目录，保留 git branch。',
       primaryButton: {
         value: '取消',
         action: () => {}
@@ -209,11 +209,16 @@ struct Index {
       secondaryButton: {
         value: '确定',
         action: () => {
-          let r = this.vm.softDeleteTask(taskId)
+          let r = this.vm.deleteTask(taskId)
           this.listMsg = r.msg
           this.refreshTasks()
-          if (this.detail.taskId === taskId) {
-            this.refreshDetail()
+          if (r.ok && this.detail.taskId === taskId) {
+            this.detail = emptyDetail()
+            this.logText = ''
+            this.logRaw = ''
+            this.gitText = ''
+            this.tab = 1
+            this.syncAuto()
           }
         }
       }

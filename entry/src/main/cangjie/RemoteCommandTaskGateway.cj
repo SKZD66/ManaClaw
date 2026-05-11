@@ -96,8 +96,8 @@ public class RemoteCommandTaskGateway <: RemoteTaskGateway {
         return unitFromExec(exec(builder.buildStopTaskCommand(taskId), 30000))
     }
 
-    public func softDeleteTask(taskId: String): Result<Unit> {
-        return unitFromExec(exec(builder.buildSoftDeleteCommand(taskId), 30000))
+    public func deleteTask(taskId: String): Result<Unit> {
+        return unitFromExec(exec(builder.buildDeleteTaskCommand(taskId), 30000))
     }
 
     public func gitSummary(taskId: String): Result<String> {

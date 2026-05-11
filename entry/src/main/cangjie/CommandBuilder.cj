@@ -265,15 +265,15 @@ mkdir -p "$TASK_DIR"
 mkdir -p "$ROOT/worktrees"
 printf "%s" "$PROMPT_B64" | base64 -d > "$TASK_DIR/prompt.txt"
 
-cat > "$TASK_DIR/meta.env" <<EOF
-TASK_ID=$TASK_ID
-REPO=$REPO
-WORKTREE=$WT_DIR
-BRANCH=$BRANCH
-TMUX=$TMUX
-CREATED_AT=$(date -Iseconds)
-MODE=$MODE_VALUE
-EOF
+{
+  printf "TASK_ID=%q\\n" "$TASK_ID"
+  printf "REPO=%q\\n" "$REPO"
+  printf "WORKTREE=%q\\n" "$WT_DIR"
+  printf "BRANCH=%q\\n" "$BRANCH"
+  printf "TMUX=%q\\n" "$TMUX"
+  printf "CREATED_AT=%q\\n" "$(date -Iseconds)"
+  printf "MODE=%q\\n" "$MODE_VALUE"
+} > "$TASK_DIR/meta.env"
 
 printf "remote_created\\n" > "$TASK_DIR/status"
 
@@ -532,15 +532,44 @@ echo stopped
 """
     }
 
-    public static func softDeleteScript(taskIdQuoted: String): String {
+    public static func deleteTaskScript(taskIdQuoted: String): String {
         return """
-set -e
+set -euo pipefail
 
 TASK_ID=${taskIdQuoted}
-TASK_DIR="$HOME/.cc-mobile/tasks/$TASK_ID"
-[ -d "$TASK_DIR" ] || exit 0
+ROOT="$HOME/.cc-mobile"
+TASK_DIR="$ROOT/tasks/$TASK_ID"
+EXPECTED_WT="$ROOT/worktrees/$TASK_ID"
+[ -d "$TASK_DIR" ] || { echo "not_found"; exit 0; }
+[ -f "$TASK_DIR/meta.env" ] || { echo "meta_missing" >&2; exit 1; }
 
-echo deleted > "$TASK_DIR/status"
+. "$TASK_DIR/meta.env"
+
+if [ -n "$TMUX" ] && tmux has-session -t "$TMUX" 2>/dev/null; then
+  tmux kill-session -t "$TMUX"
+fi
+
+if [ "$WORKTREE" != "$EXPECTED_WT" ]; then
+  echo "unsafe_worktree:$WORKTREE" >&2
+  exit 1
+fi
+
+if [ -n "$REPO" ] && git -C "$REPO" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  cd "$REPO"
+  git worktree remove --force "$WORKTREE" 2>/dev/null || true
+  git worktree prune || true
+fi
+
+if [ -d "$WORKTREE" ]; then
+  rm -rf "$WORKTREE"
+fi
+
+if [ -n "$REPO" ] && git -C "$REPO" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  cd "$REPO"
+  git worktree prune || true
+fi
+
+rm -rf "$TASK_DIR"
 echo deleted
 """
     }
@@ -671,13 +700,13 @@ class CommandBuilder {
     }
 
     /**
-     * 构建软删除命令（仅写 deleted 到 status）。
+     * 构建删除命令：停止 tmux，删除任务目录与 worktree，但保留 git branch。
      */
-    public func buildSoftDeleteCommand(taskId: String): String {
+    public func buildDeleteTaskCommand(taskId: String): String {
         if (!ShellEscape.taskIdSafe(taskId)) {
             return buildRejectCommand("invalid task_id")
         }
-        return wrapBashLc(RemoteScripts.softDeleteScript(ShellEscape.shellSingleQuote(taskId)))
+        return wrapBashLc(RemoteScripts.deleteTaskScript(ShellEscape.shellSingleQuote(taskId)))
     }
 
     /**

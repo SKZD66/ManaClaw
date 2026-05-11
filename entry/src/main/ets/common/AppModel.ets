@@ -68,7 +68,7 @@ export interface TaskViewModel {
   refreshTask(taskId: string): UiResult<TaskDetailState>
   refreshLogs(taskId: string): UiResult<LogPanelState>
   stopTask(taskId: string): UiResult<boolean>
-  softDeleteTask(taskId: string): UiResult<boolean>
+  deleteTask(taskId: string): UiResult<boolean>
   loadGitSummary(taskId: string): UiResult<string>
 }
 

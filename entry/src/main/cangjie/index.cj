@@ -132,7 +132,7 @@ class EntryView {
             "GIT_SUMMARY",
             "STOP",
             "VERIFY_STOP",
-            "SOFT_DELETE",
+            "DELETE",
             "VERIFY_DELETE"
         ]
     }
@@ -254,16 +254,29 @@ fi
         let verifyDeleteCmd = """
 set -e
 TASK_ID=${taskIdQ}
+REPO=${repoQ}
 TASK_DIR="$HOME/.cc-mobile/tasks/$TASK_ID"
 WT_DIR="$HOME/.cc-mobile/worktrees/$TASK_ID"
 ERR=0
 STATUS=$(cat "$TASK_DIR/status" 2>/dev/null || echo unknown)
-if [ "$STATUS" != "deleted" ]; then
-  echo "bad_status:$STATUS"
+if [ -d "$TASK_DIR" ]; then
+  echo "task_dir_still_exists"
   ERR=1
 fi
-[ -d "$TASK_DIR" ] || { echo "missing:task_dir"; ERR=1; }
-[ -d "$WT_DIR" ] || { echo "missing:worktree_dir"; ERR=1; }
+if [ -d "$WT_DIR" ]; then
+  echo "worktree_dir_still_exists"
+  ERR=1
+fi
+cd "$REPO"
+BRANCH=$(git branch --list "agent/$TASK_ID")
+if [ -z "$BRANCH" ]; then
+  echo "branch_missing"
+  ERR=1
+fi
+if tmux has-session -t "cc-$TASK_ID" 2>/dev/null; then
+  echo "session_still_alive"
+  ERR=1
+fi
 if [ "$ERR" -eq 0 ]; then
   echo "VERIFY_DELETE:PASS"
 else
@@ -282,7 +295,7 @@ fi
             CommandCase("TAIL_STDERR", builder.buildTailStderrCommand(selectedTaskId)),
             CommandCase("GIT_SUMMARY", builder.buildGitSummaryCommand(selectedTaskId)),
             CommandCase("STOP", builder.buildStopTaskCommand(selectedTaskId)),
-            CommandCase("SOFT_DELETE", builder.buildSoftDeleteCommand(selectedTaskId)),
+            CommandCase("DELETE", builder.buildDeleteTaskCommand(selectedTaskId)),
             CommandCase("CLEAN_TEST_DATA", cleanCmd),
             CommandCase("VERIFY_CREATE", verifyCreateCmd),
             CommandCase("VERIFY_START", verifyStartCmd),
@@ -545,18 +558,18 @@ fi
                 allPass = appendTaskCoreCheck(sb, taskCoreStoredStatus(store, task.id) == "stopped", "stopTask 后本地状态 stopped") &&
                     allPass
 
-                let deleted = service.softDeleteTask(task.id)
-                allPass = appendTaskCoreCheck(sb, deleted.isOk, "softDeleteTask 成功") && allPass
-                allPass = appendTaskCoreCheck(sb, gateway.softDeleteCallCount == 1, "softDeleteTask 调用 gateway") && allPass
-                allPass = appendTaskCoreCheck(sb, taskCoreStoredStatus(store, task.id) == "deleted", "softDeleteTask 后本地状态 deleted") &&
+                let deleted = service.deleteTask(task.id)
+                allPass = appendTaskCoreCheck(sb, deleted.isOk, "deleteTask 成功") && allPass
+                allPass = appendTaskCoreCheck(sb, gateway.deleteCallCount == 1, "deleteTask 调用 gateway") && allPass
+                allPass = appendTaskCoreCheck(sb, taskCoreStoredStatus(store, task.id) == "not_found", "deleteTask 后本地记录移除") &&
                     allPass
 
                 let visible = service.refreshTasks(server)
                 match (visible.value) {
                     case Some(tasks) =>
-                        allPass = appendTaskCoreCheck(sb, tasks.size == 0, "deleted 任务默认不出现在列表") && allPass
+                        allPass = appendTaskCoreCheck(sb, tasks.size == 0, "删除后任务不出现在列表") && allPass
                     case None =>
-                        allPass = appendTaskCoreCheck(sb, false, "deleted 任务默认不出现在列表") && allPass
+                        allPass = appendTaskCoreCheck(sb, false, "删除后任务不出现在列表") && allPass
                 }
             case None =>
                 allPass = appendTaskCoreCheck(sb, false, "submitTask 返回 Task 内容") && allPass
@@ -813,12 +826,12 @@ fi
         allPass = appendTaskCoreCheck(sb, taskCoreStoredStatus(store, task.id) == "stopped", "stopTask 后本地状态 stopped") &&
             allPass
 
-        let deleted = service.softDeleteTask(task.id)
-        allPass = appendTaskCoreCheck(sb, deleted.isOk, "softDeleteTask 可软删除真实远端任务") && allPass
+        let deleted = service.deleteTask(task.id)
+        allPass = appendTaskCoreCheck(sb, deleted.isOk, "deleteTask 可真正删除真实远端任务") && allPass
         if (!deleted.isOk) {
-            appendTaskCoreError(sb, deleted.error ?? "unknown softDeleteTask error")
+            appendTaskCoreError(sb, deleted.error ?? "unknown deleteTask error")
         }
-        allPass = appendTaskCoreCheck(sb, taskCoreStoredStatus(store, task.id) == "deleted", "softDeleteTask 后本地状态 deleted") &&
+        allPass = appendTaskCoreCheck(sb, taskCoreStoredStatus(store, task.id) == "not_found", "deleteTask 后本地记录移除") &&
             allPass
         return allPass
     }
@@ -1098,8 +1111,8 @@ fi
                             Row {
                                 Button("STOP").onClick {evt => runByName("STOP")}.height(32).width(49.percent)
                                 Text(" ").width(2.percent)
-                                Button("SOFT_DELETE")
-                                    .onClick {evt => runByName("SOFT_DELETE")}
+                                Button("DELETE")
+                                    .onClick {evt => runByName("DELETE")}
                                     .height(32)
                                     .width(49.percent)
                             }.width(100.percent)

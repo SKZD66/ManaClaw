@@ -70,7 +70,7 @@ export struct TaskDetailPage {
           Row() {
             Button('停止任务').width('49%').height(34).onClick(() => this.onStop(this.detail.taskId))
             Blank().width('2%')
-            Button('软删除').width('49%').height(34).onClick(() => this.onDelete(this.detail.taskId))
+            Button('删除').width('49%').height(34).onClick(() => this.onDelete(this.detail.taskId))
           }.width('100%')
 
           if (this.detailMsg.length > 0) {
