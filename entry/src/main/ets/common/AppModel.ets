@@ -57,19 +57,25 @@ export class UiResult<T> {
 }
 
 export interface TaskViewModel {
+  // --- 多主机连接管理新增 ---
   loadConnection(): ConnectionState
+  loadAllConnections(): ConnectionState[]
   saveConnection(input: ConnectionState): UiResult<boolean>
-  testConnection(input: ConnectionState): UiResult<boolean>
-  initRemote(): UiResult<boolean>
+  setActiveConnection(name: string): UiResult<boolean>
+  deleteConnection(name: string): UiResult<boolean>
 
-  loadTasks(): UiResult<TaskCardState[]>
-  submitTask(input: NewTaskInput): UiResult<TaskCardState>
-  openTask(taskId: string): UiResult<TaskDetailState>
-  refreshTask(taskId: string): UiResult<TaskDetailState>
-  refreshLogs(taskId: string): UiResult<LogPanelState>
-  stopTask(taskId: string): UiResult<boolean>
-  deleteTask(taskId: string): UiResult<boolean>
-  loadGitSummary(taskId: string): UiResult<string>
+  testConnection(input: ConnectionState): Promise<UiResult<boolean>>
+  initRemote(input: ConnectionState): Promise<UiResult<boolean>>
+
+  // --- 任务管理保持不变 ---
+  loadTasks(): Promise<UiResult<TaskCardState[]>>
+  submitTask(input: NewTaskInput): Promise<UiResult<TaskCardState>>
+  openTask(taskId: string): Promise<UiResult<TaskDetailState>>
+  refreshTask(taskId: string): Promise<UiResult<TaskDetailState>>
+  refreshLogs(taskId: string): Promise<UiResult<LogPanelState>>
+  stopTask(taskId: string): Promise<UiResult<boolean>>
+  deleteTask(taskId: string): Promise<UiResult<boolean>>
+  loadGitSummary(taskId: string): Promise<UiResult<string>>
 }
 
 export function statusColor(status: string): number {
@@ -82,51 +88,17 @@ export function statusColor(status: string): number {
 
 export function emptyDetail(): TaskDetailState {
   return {
-    title: '',
-    taskId: '',
-    status: 'unknown',
-    repo: '',
-    branch: '',
-    live: false,
-    createdAt: '',
-    updatedAt: '',
-    lastLog: '',
-    worktree: '',
-    tmuxSession: '',
-    exitCode: '',
-    logs: '',
-    rawLogs: '',
-    stderr: '',
-    gitSummary: ''
+    title: '', taskId: '', status: 'unknown', repo: '', branch: '',
+    live: false, createdAt: '', updatedAt: '', lastLog: '', worktree: '',
+    tmuxSession: '', exitCode: '', logs: '', rawLogs: '', stderr: '', gitSummary: ''
   }
 }
 
 export function copyDetail(d: TaskDetailState): TaskDetailState {
   return {
-    title: d.title,
-    taskId: d.taskId,
-    status: d.status,
-    repo: d.repo,
-    branch: d.branch,
-    live: d.live,
-    createdAt: d.createdAt,
-    updatedAt: d.updatedAt,
-    lastLog: d.lastLog,
-    worktree: d.worktree,
-    tmuxSession: d.tmuxSession,
-    exitCode: d.exitCode,
-    logs: d.logs,
-    rawLogs: d.rawLogs,
-    stderr: d.stderr,
-    gitSummary: d.gitSummary
-  }
-}
-
-export function newTaskDraft(repoPath: string): NewTaskInput {
-  return {
-    repoPath: repoPath,
-    title: '',
-    prompt: '',
-    mode: 'run'
+    title: d.title, taskId: d.taskId, status: d.status, repo: d.repo,
+    branch: d.branch, live: d.live, createdAt: d.createdAt, updatedAt: d.updatedAt,
+    lastLog: d.lastLog, worktree: d.worktree, tmuxSession: d.tmuxSession,
+    exitCode: d.exitCode, logs: d.logs, rawLogs: d.rawLogs, stderr: d.stderr, gitSummary: d.gitSummary
   }
 }

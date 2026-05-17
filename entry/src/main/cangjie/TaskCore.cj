@@ -310,7 +310,7 @@ public class TaskStore {
         var index: Int64 = 0
         while (index < tasks.size) {
             if (tasks[index].id == taskId) {
-                tasks.remove(at: index)
+                tasks.remove(index)
                 removed = true
                 break
             }
@@ -1075,7 +1075,7 @@ private func cloneServers(servers: ArrayList<ServerConfig>): ArrayList<ServerCon
     return out
 }
 
-private class TaskCoreJson {
+class TaskCoreJson {
     public static func encodeTasks(tasks: ArrayList<Task>): String {
         let array = JsonArray()
         for (task in tasks) {
